@@ -1,6 +1,102 @@
-[gd_scene load_steps=2 format=3 uid="uid://clu05bd2gt0m3"]
+[gd_scene load_steps=8 format=3 uid="uid://clu05bd2gt0m3"]
 
 [ext_resource type="Script" uid="uid://c2l7k7tlo6ve8" path="res://Main.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://b7q0rpwvsrp3f" path="res://assets/source/models/Cars.fbx" id="2"]
+[ext_resource type="Script" uid="uid://qeyiloi24a70" path="res://Overlay.gd" id="3"]
 
-[node name="Main" type="Node2D"]
+[sub_resource type="BoxShape3D" id="2"]
+size = Vector3(2.4, 0.8, 4.2)
+
+[sub_resource type="CylinderMesh" id="3"]
+height = 0.4
+
+[sub_resource type="BoxMesh" id="4"]
+size = Vector3(60, 1, 60)
+
+[sub_resource type="BoxShape3D" id="5"]
+size = Vector3(60, 1, 60)
+
+[node name="Main" type="Node3D"]
 script = ExtResource("1")
+camera_steer_influence = 0.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.6967067, 0.4050497, -0.59205955, 0, 0.8253356, 0.5646425, 0.7173561, -0.3933902, 0.57501686, 0, 0, 0)
+light_energy = 1.5
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 10)
+
+[node name="Vehicle" type="VehicleBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mass = 800.0
+
+[node name="ChassisModel" parent="Vehicle" instance=ExtResource("2")]
+
+[node name="ChassisCollision" type="CollisionShape3D" parent="Vehicle"]
+shape = SubResource("2")
+
+[node name="FrontLeft" type="VehicleWheel3D" parent="Vehicle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.065, -2.4)
+use_as_steering = true
+wheel_radius = 0.8
+suspension_travel = 0.25
+suspension_stiffness = 25.0
+damping_compression = 3.0
+damping_relaxation = 4.0
+
+[node name="FrontLeftMesh" type="MeshInstance3D" parent="Vehicle/FrontLeft"]
+transform = Transform3D(-7.2399803e-06, -3.5, 0, 2, -1.2669965e-05, 0, 0, 0, 2, 0, 0, 0)
+mesh = SubResource("3")
+
+[node name="FrontRight" type="VehicleWheel3D" parent="Vehicle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.3, -2.4)
+use_as_steering = true
+wheel_radius = 0.8
+suspension_travel = 0.25
+suspension_stiffness = 25.0
+damping_compression = 3.0
+damping_relaxation = 4.0
+
+[node name="FrontRightMesh" type="MeshInstance3D" parent="Vehicle/FrontRight"]
+transform = Transform3D(-7.2399803e-06, -3.5, 0, 2, -1.2669965e-05, 0, 0, 0, 2, 0, 0, 0)
+mesh = SubResource("3")
+
+[node name="RearLeft" type="VehicleWheel3D" parent="Vehicle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.3, 1.5)
+use_as_traction = true
+wheel_radius = 0.8
+suspension_travel = 0.25
+suspension_stiffness = 25.0
+damping_compression = 3.0
+damping_relaxation = 4.0
+
+[node name="RearLeftMesh" type="MeshInstance3D" parent="Vehicle/RearLeft"]
+transform = Transform3D(-7.2399803e-06, -3.5, 0, 2, -1.2669965e-05, 0, 0, 0, 2, 0, 0, 0)
+mesh = SubResource("3")
+
+[node name="RearRight" type="VehicleWheel3D" parent="Vehicle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.3, 1.5)
+use_as_traction = true
+wheel_radius = 0.8
+suspension_travel = 0.25
+suspension_stiffness = 25.0
+damping_compression = 3.0
+damping_relaxation = 4.0
+
+[node name="RearRightMesh" type="MeshInstance3D" parent="Vehicle/RearRight"]
+transform = Transform3D(-7.2399803e-06, -3.5, 0, 2, -1.2669965e-05, 0, 0, 0, 2, 0, 0, 0)
+mesh = SubResource("3")
+
+[node name="Ground" type="StaticBody3D" parent="."]
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("4")
+
+[node name="GroundCollision" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("5")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Overlay" type="Node2D" parent="CanvasLayer"]
+script = ExtResource("3")

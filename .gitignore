@@ -7,6 +7,10 @@
 /touchpadviewer/addons/py4godot/
 /touchpadviewer/addons/godot_super-wakatime/
 
+# Assets (sources/archives)
+/touchpadviewer/assets/source/
+/touchpadviewer/assets/*.zip
+
 # OS
 .DS_Store
 Thumbs.db

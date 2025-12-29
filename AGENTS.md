@@ -2,8 +2,10 @@
 
 ## Project Structure & Module Organization
 - `touchpadviewer/` contains the Godot project (project file, scenes, scripts).
-- `touchpadviewer/Main.tscn` and `touchpadviewer/Main.gd` hold the runtime scene and logic.
+- `touchpadviewer/Main.tscn` and `touchpadviewer/Main.gd` hold the 3D vehicle scene and gameplay logic.
+- `touchpadviewer/Overlay.gd` draws the HUD overlay (steering, gear, pad count).
 - `touchpadviewer/touchpad_joy_bridge.py` and `touchpadviewer/touchpad_uinput_bridge.py` are Linux input bridges.
+- `touchpadviewer/assets/` holds models/textures used by the vehicle (sources are ignored).
 - `old/` contains legacy or experimental scripts not used by the current app.
 
 ## Build, Test, and Development Commands
@@ -20,7 +22,7 @@
 
 ## Testing Guidelines
 - No automated tests are present.
-- When changing input behavior, validate by running the scene and verifying on-screen steering/shifter response.
+- When changing input behavior, validate by running the scene and verifying on-screen steering/shifter response and wheel steering in 3D.
 
 ## Commit & Pull Request Guidelines
 - No established commit message convention in history yet.
@@ -29,5 +31,5 @@
 
 ## Configuration & Runtime Notes
 - Live tuning is driven by `user://touchpad_joy_config.json`, written by `Main.gd`.
-- Adjust tuning via exported fields in the Node2D inspector; the bridge reloads the JSON periodically.
+- Adjust tuning via exported fields in the `Main` node inspector; the bridge reloads the JSON periodically.
 - Linux input access may require permissions for `/dev/input/event*` and `/dev/uinput`.

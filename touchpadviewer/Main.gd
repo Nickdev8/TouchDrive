@@ -1,23 +1,47 @@
-extends Node2D
+extends Node3D
 
-# Minimal font reference for drawing text
-var font: Font
-
-# Steering wheel state
-var steer := 0.0
-var wheel_angle := 0.0
-var wheel_speed := 3.0
-var gear := 0
-
-# Background bridge process id
+# Bridge process id
 var bridge_pid := -1
 var config_path := ""
 var _last_config := {}
 
-# Minimal font reference for drawing text
+@export var max_engine_force := 900.0
+@export var reverse_force := 600.0
+@export var max_brake := 10.0
+@export var max_steer := 0.5
+@export var steer_rate := 1.6
+@export var camera_distance := 8.0
+@export var camera_height := 3.0
+@export var camera_smooth := 8.0
+@export var camera_yaw_speed := 1.6
+@export var camera_pitch_speed := 1.2
+@export var camera_pitch_min := -1.1
+@export var camera_pitch_max := -0.2
+@export var camera_steer_influence := 0.5
+
+@export var steer_delta_scale := 0.1
+@export var steer_deadzone := 10.0
+@export var shift_margin := 0.12
+@export var shift_gap := 0.18
+@export var neutral_min := 0.45
+@export var neutral_max := 0.55
+@export var gear_hold_time := 0.12
+
+@onready var vehicle := $Vehicle
+@onready var front_left := $Vehicle/FrontLeft
+@onready var front_right := $Vehicle/FrontRight
+@onready var rear_left := $Vehicle/RearLeft
+@onready var rear_right := $Vehicle/RearRight
+@onready var camera := $Camera3D
+@onready var overlay := $CanvasLayer/Overlay
+
+var gear := 0
+var steer := 0.0
+var steer_angle := 0.0
+var camera_yaw := 0.0
+var camera_pitch := -0.4
+
 func _ready():
-	# Load the built-in default font
-	font = ThemeDB.fallback_font
 	# Start the touchpad->joystick bridge so Godot can read joystick input
 	var script_path = ProjectSettings.globalize_path("res://touchpad_joy_bridge.py")
 	config_path = ProjectSettings.globalize_path("user://touchpad_joy_config.json")
@@ -36,55 +60,95 @@ func _on_tree_exiting():
 	_stop_bridge()
 
 func _stop_bridge():
-	# Stop the bridge when the scene exits
 	if bridge_pid > 0:
 		OS.kill(bridge_pid)
 		bridge_pid = -1
 
-func _process(_delta):
-	# Read steering from the first connected joystick
+func _physics_process(delta):
+	_update_camera_orbit(delta)
+	_update_input()
+	_apply_vehicle(delta)
+	_update_camera(delta)
+	_update_overlay()
+	_write_config()
+
+func _update_input():
 	var pads = Input.get_connected_joypads()
-	if pads.size() > 0:
-		steer = Input.get_joy_axis(pads[0], JOY_AXIS_LEFT_X)
-		gear = _read_gear(pads[0])
-	else:
-		steer = 0.0
+	if pads.size() == 0:
 		gear = 0
+		steer = 0.0
+		return
+	var pad = pads[0]
+	steer = Input.get_joy_axis(pad, JOY_AXIS_LEFT_X)
 	if abs(steer) < 0.05:
 		steer = 0.0
-	wheel_angle += steer * wheel_speed * _delta
-	_write_config()
-	queue_redraw()
+	gear = _read_gear(pad)
 
-func _draw():
-	# Draw a simple steering wheel driven by the joystick axis
-	var view_size = get_viewport_rect().size
-	var center = Vector2(view_size.x * 0.3, view_size.y * 0.5)
-	var radius = 120.0
-	draw_circle(center, radius, Color.WHITE)
-	var hand = Vector2.RIGHT.rotated(wheel_angle) * (radius - 20.0)
-	draw_line(center, center + hand, Color.BLACK, 6.0)
-	draw_string(font, center + Vector2(-70, radius + 30), "steer: " + str(steer), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
-	draw_string(font, center + Vector2(-70, radius + 50), "wheel: " + str(wheel_angle), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
-	draw_string(font, center + Vector2(-70, radius + 70), "pads: " + str(Input.get_connected_joypads().size()), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
-	var gear_label = "R" if gear < 0 else str(gear)
-	var gear_color = Color(1, 0.2, 0.2) if gear < 0 else Color.WHITE
-	draw_string(font, center + Vector2(-70, radius + 90), "gear: " + gear_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gear_color)
+func _apply_vehicle(_delta):
+	steer_angle += steer * steer_rate * _delta
+	steer_angle = clamp(steer_angle, -max_steer, max_steer)
+	front_left.steering = steer_angle
+	front_right.steering = steer_angle
 
-	# Draw a simple 2x2 shifter grid on the right side
-	var shifter_origin = Vector2(view_size.x * 0.65, view_size.y * 0.35)
-	var box = Vector2(80, 70)
-	for row in range(2):
-		for col in range(2):
-			var idx = col * 2 + row + 1
-			var pos = shifter_origin + Vector2(col * (box.x + 12), row * (box.y + 12))
-			var color = Color.WHITE if gear == idx else Color(0.6, 0.6, 0.6)
-			draw_rect(Rect2(pos, box), color, false, 3.0)
-			draw_string(font, pos + Vector2(30, 42), str(idx), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, color)
+	var engine_force = 0.0
+	var brake = 0.0
+	if gear > 0:
+		var ratio = _gear_ratio(gear)
+		engine_force = max_engine_force * ratio
+	elif gear < 0:
+		engine_force = -reverse_force
+	else:
+		brake = max_brake
 
-	var shifter_label = "R" if gear < 0 else str(gear)
-	var shifter_color = Color(1, 0.2, 0.2) if gear < 0 else Color.WHITE
-	draw_string(font, shifter_origin + Vector2(0, box.y * 2 + 24), "shift: " + shifter_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, shifter_color)
+	rear_left.engine_force = engine_force
+	rear_right.engine_force = engine_force
+	front_left.brake = brake
+	front_right.brake = brake
+	rear_left.brake = brake
+	rear_right.brake = brake
+
+func _gear_ratio(value):
+	match value:
+		1:
+			return 0.45
+		2:
+			return 0.65
+		3:
+			return 0.85
+		4:
+			return 1.0
+		_:
+			return 0.5
+
+func _update_camera(delta):
+	var pivot = vehicle.global_transform.origin
+	var offset = Vector3(0, camera_height, camera_distance)
+	offset = offset.rotated(Vector3.UP, camera_yaw)
+	offset = offset.rotated(Vector3.RIGHT, camera_pitch)
+	var target = pivot + offset
+	var current = camera.global_transform.origin
+	camera.global_transform.origin = current.lerp(target, clamp(camera_smooth * delta, 0.0, 1.0))
+	camera.look_at(pivot, Vector3.UP)
+
+func _update_camera_orbit(delta):
+	camera_yaw += steer_angle * camera_steer_influence * delta
+	if Input.is_action_pressed("ui_left"):
+		camera_yaw += camera_yaw_speed * delta
+	if Input.is_action_pressed("ui_right"):
+		camera_yaw -= camera_yaw_speed * delta
+	if Input.is_action_pressed("ui_up"):
+		camera_pitch += camera_pitch_speed * delta
+	if Input.is_action_pressed("ui_down"):
+		camera_pitch -= camera_pitch_speed * delta
+	camera_pitch = clamp(camera_pitch, camera_pitch_min, camera_pitch_max)
+
+func _update_overlay():
+	if overlay:
+		overlay.steer = steer
+		overlay.steer_angle = steer_angle
+		overlay.gear = gear
+		overlay.pads = Input.get_connected_joypads().size()
+		overlay.queue_redraw()
 
 func _read_gear(pad_id):
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_BACK):
@@ -98,14 +162,6 @@ func _read_gear(pad_id):
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_Y):
 		return 4
 	return 0
-
-@export var steer_delta_scale := 0.1
-@export var steer_deadzone := 10.0
-@export var shift_margin := 0.12
-@export var shift_gap := 0.18
-@export var neutral_min := 0.45
-@export var neutral_max := 0.55
-@export var gear_hold_time := 0.12
 
 func _write_config():
 	var cfg = {
