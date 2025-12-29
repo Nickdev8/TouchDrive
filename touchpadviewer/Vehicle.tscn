@@ -5,24 +5,26 @@
 [ext_resource type="PackedScene" uid="uid://dd4eie0bwxpx" path="res://assets/source/models/Wheel.fbx" id="3"]
 
 [sub_resource type="BoxShape3D" id="1"]
-size = Vector3(3.59, 1.0908813, 6.357372)
+size = Vector3(3.59, 0.9272766, 5.6209555)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_hdsag"]
-size = Vector3(3.59, 1.1847534, 2.6322377)
+size = Vector3(3.59, 1.0955963, 2.0746725)
 
 [node name="Vehicle" type="VehicleBody3D"]
 mass = 1800.0
+center_of_mass_mode = 1
+center_of_mass = Vector3(0, -0.35, 0)
 script = ExtResource("1")
 
 [node name="ChassisModel" parent="." instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00021648407, 2.3841858e-07, 0.016562939)
 
 [node name="ChassisCollision" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.40529847)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8661404, -0.10297394)
 shape = SubResource("1")
 
 [node name="ChassisCollision2" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0.44320023)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8661222, 0.3064326)
 shape = SubResource("BoxShape3D_hdsag")
 
 [node name="FrontLeft" type="VehicleWheel3D" parent="."]

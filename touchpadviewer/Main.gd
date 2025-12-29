@@ -4,6 +4,13 @@ extends Node3D
 const JOY_AXIS_HAT_X := 6
 const JOY_AXIS_HAT_Y := 7
 
+const GEAR_MAX_SPEED_KMH := {
+	1: 30.0,
+	2: 55.0,
+	3: 90.0,
+	4: 140.0,
+}
+
 # Bridge process id
 var bridge_pid := -1
 var config_path := ""
@@ -148,6 +155,10 @@ func _apply_vehicle(_delta):
 	if gear > 0:
 		var ratio = _gear_ratio(gear)
 		engine_force = vehicle_settings.max_engine_force * ratio * throttle
+		var speed_kmh = vehicle.linear_velocity.length() * 3.6
+		var max_speed = GEAR_MAX_SPEED_KMH.get(gear, 80.0)
+		var limit = clamp(1.0 - (speed_kmh / max_speed), 0.0, 1.0)
+		engine_force *= limit
 	elif gear < 0:
 		engine_force = -vehicle_settings.reverse_force * abs(throttle)
 	if brake > 0.0:
@@ -163,13 +174,13 @@ func _apply_vehicle(_delta):
 func _gear_ratio(value):
 	match value:
 		1:
-			return 1.6
+			return 2.4
 		2:
-			return 1.2
+			return 1.6
 		3:
-			return 0.9
+			return 1.05
 		4:
-			return 0.65
+			return 0.45
 		_:
 			return 0.5
 
