@@ -54,6 +54,7 @@ script = ExtResource("4")
 
 [node name="Vehicle" parent="." instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mass = 1300.0
 
 [node name="Ground" type="StaticBody3D" parent="."]
 
@@ -67,25 +68,76 @@ shape = SubResource("5")
 [node name="Obstacles" type="Node3D" parent="."]
 
 [node name="Block" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 18.057373, 0.10738015, -1.4129667)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 18.057373, 0.10738015, -31.516762)
 
 [node name="Block2" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.845246, 0.10738015, 1.3589344)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.845246, 0.10738015, -28.74486)
 
 [node name="Block3" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 17.541924, 0.10738015, 1.6760473)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 17.541924, 0.10738015, -28.427746)
 
 [node name="Block4" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.294601, 0.10738015, -2.4446483)
-
-[node name="Block5" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 17.443855, 0.10738015, -4.5442295)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.294601, 0.10738015, -32.548443)
 
 [node name="Block6" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.414838, 0.10738015, -6.4834332)
+transform = Transform3D(-2.474308e-08, -8.384822e-08, 2, -1.9182236, 0.56605566, 0, -0.56605566, -1.9182236, -8.742278e-08, 2.1199837, -0.90781236, -89.17801)
+
+[node name="Block8" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-2.5354133e-08, -8.366547e-08, 2, -1.9140428, 0.580035, 0, -0.580035, -1.9140428, -8.742278e-08, 2.1199837, 0.12619638, -92.67723)
+
+[node name="Block9" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-3.7951555e-08, -7.875546e-08, 2, -1.801715, 0.86823034, 0, -0.86823034, -1.801715, -8.742278e-08, 2.1199837, 1.5401225, -96.37297)
+
+[node name="Block10" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-5.546514e-08, -6.757485e-08, 2.0000002, -1.5459325, 1.2688946, 0, -1.2688944, -1.5459323, -8.742278e-08, 2.1199856, 3.7701106, -99.87427)
+
+[node name="Block11" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-2.474308e-08, -8.384822e-08, 2, -1.9182236, 0.56605566, 0, -0.56605566, -1.9182236, -8.742278e-08, -1.8570557, -0.90781236, -89.17801)
+
+[node name="Block12" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-2.5354133e-08, -8.366547e-08, 2, -1.9140428, 0.580035, 0, -0.580035, -1.9140428, -8.742278e-08, -1.8570557, 0.12619638, -92.67723)
+
+[node name="Block13" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-3.7951555e-08, -7.875546e-08, 2, -1.801715, 0.86823034, 0, -0.86823034, -1.801715, -8.742278e-08, -1.8570557, 1.5401225, -96.37297)
+
+[node name="Block14" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-5.546514e-08, -6.757485e-08, 2.0000002, -1.5459325, 1.2688946, 0, -1.2688944, -1.5459323, -8.742278e-08, -1.8570538, 3.7701106, -99.87427)
+
+[node name="Block15" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-7.285679e-08, -4.8318007e-08, 1.9999999, -1.1053871, 1.6667691, 0, -1.6667693, -1.1053872, -8.742278e-08, 2.1199856, 6.7473326, -102.54097)
+
+[node name="Block16" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-7.285679e-08, -4.8318007e-08, 1.9999999, -1.1053871, 1.6667691, 0, -1.6667693, -1.1053872, -8.742278e-08, -1.8570538, 6.7473326, -102.54097)
 
 [node name="Block7" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 18.061703, 0.10738015, -8.069028)
+transform = Transform3D(-2.474307e-08, -8.384822e-08, -2, -1.9182235, 0.56605554, -2.6054018e-15, 0.56605554, 1.9182235, -8.742277e-08, -1.8570536, -0.90781236, -133.17046)
+
+[node name="Block17" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-2.5354128e-08, -8.366547e-08, -2, -1.9140428, 0.580035, -1.7763568e-15, 0.580035, 1.9140428, -8.742278e-08, -1.8570539, 0.12619638, -129.67123)
+
+[node name="Block18" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-3.795155e-08, -7.875546e-08, -2, -1.801715, 0.86823034, 0, 0.86823034, 1.801715, -8.742278e-08, -1.8570542, 1.5401225, -125.975494)
+
+[node name="Block19" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-5.5465136e-08, -6.757483e-08, -2.0000002, -1.5459323, 1.2688946, 1.6580894e-15, 1.2688944, 1.545932, -8.7422784e-08, -1.8570565, 3.7701106, -122.4742)
+
+[node name="Block20" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-2.474307e-08, -8.384822e-08, -2, -1.9182235, 0.56605554, -2.6054018e-15, 0.56605554, 1.9182235, -8.742277e-08, 2.1199858, -0.90781236, -133.17046)
+
+[node name="Block21" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-2.5354128e-08, -8.366547e-08, -2, -1.9140428, 0.580035, -1.7763568e-15, 0.580035, 1.9140428, -8.742278e-08, 2.1199856, 0.12619638, -129.67123)
+
+[node name="Block22" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-3.795155e-08, -7.875546e-08, -2, -1.801715, 0.86823034, 0, 0.86823034, 1.801715, -8.742278e-08, 2.119985, 1.5401225, -125.975494)
+
+[node name="Block23" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-5.5465136e-08, -6.757483e-08, -2.0000002, -1.5459323, 1.2688946, 1.6580894e-15, 1.2688944, 1.545932, -8.7422784e-08, 2.119983, 3.7701106, -122.4742)
+
+[node name="Block24" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-7.28568e-08, -4.831802e-08, -1.9999999, -1.1053871, 1.6667691, -2.6054018e-15, 1.6667693, 1.1053872, -8.742276e-08, -1.8570567, 6.7473326, -119.807495)
+
+[node name="Block25" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(-7.28568e-08, -4.831802e-08, -1.9999999, -1.1053871, 1.6667691, -2.6054018e-15, 1.6667693, 1.1053872, -8.742276e-08, 2.1199827, 6.7473326, -119.807495)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("9")
@@ -94,3 +146,33 @@ environment = SubResource("9")
 
 [node name="Overlay" type="Node2D" parent="CanvasLayer"]
 script = ExtResource("3")
+
+[node name="Ground2" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -58.577892)
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground2"]
+material_override = SubResource("6")
+mesh = SubResource("4")
+
+[node name="GroundCollision" type="CollisionShape3D" parent="Ground2"]
+shape = SubResource("5")
+
+[node name="Ground3" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -163.79866)
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground3"]
+material_override = SubResource("6")
+mesh = SubResource("4")
+
+[node name="GroundCollision" type="CollisionShape3D" parent="Ground3"]
+shape = SubResource("5")
+
+[node name="Ground4" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -218.31418)
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground4"]
+material_override = SubResource("6")
+mesh = SubResource("4")
+
+[node name="GroundCollision" type="CollisionShape3D" parent="Ground4"]
+shape = SubResource("5")

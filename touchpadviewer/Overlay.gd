@@ -11,6 +11,7 @@ var right_touch_active := false
 var right_two_fingers := false
 var left_f1 := Vector2.ZERO
 var left_touch_active := false
+var speed_kmh := 0.0
 
 var font: Font
 
@@ -46,7 +47,8 @@ func _draw():
 
 	draw_string(font, center + Vector2(-60, radius + 20), "steer: " + str(steer), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
 	draw_string(font, center + Vector2(-60, radius + 40), "gear: " + gear_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gear_color)
-	draw_string(font, center + Vector2(-60, radius + 60), "pads: " + str(pads), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
+	draw_string(font, center + Vector2(-60, radius + 60), "speed: " + str(snapped(speed_kmh, 0.1)) + " km/h", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
+	draw_string(font, center + Vector2(-60, radius + 80), "pads: " + str(pads), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
 
 	# Joystick vector display (steer/throttle)
 	var vec_origin = center + Vector2(120, -40)

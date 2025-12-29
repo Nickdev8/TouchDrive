@@ -163,13 +163,13 @@ func _apply_vehicle(_delta):
 func _gear_ratio(value):
 	match value:
 		1:
-			return 0.4
+			return 1.6
 		2:
-			return 0.75
+			return 1.2
 		3:
-			return 1.1
+			return 0.9
 		4:
-			return 1.5
+			return 0.65
 		_:
 			return 0.5
 
@@ -213,6 +213,7 @@ func _update_overlay():
 		overlay.right_two_fingers = right_two_fingers
 		overlay.left_f1 = left_f1
 		overlay.left_touch_active = left_finger_active
+		overlay.speed_kmh = vehicle.linear_velocity.length() * 3.6 if vehicle else 0.0
 		overlay.queue_redraw()
 
 func _read_gear(pad_id):
