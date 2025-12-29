@@ -39,7 +39,8 @@ damping_compression = 6.0
 damping_relaxation = 8.0
 
 [node name="FrontLeftMesh" parent="FrontLeft" instance=ExtResource("3")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+scale = Vector3(1, 1, -1)
 
 [node name="FrontRight" type="VehicleWheel3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.5, -2.4)
@@ -53,9 +54,11 @@ damping_compression = 6.0
 damping_relaxation = 8.0
 
 [node name="FrontRightMesh" parent="FrontRight" instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+scale = Vector3(-1, 1, -1)
 
 [node name="RearLeft" type="VehicleWheel3D" parent="."]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -2, 0.6, 1.5)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -2, 0.5, 1.5)
 use_as_traction = true
 wheel_radius = 0.45
 wheel_friction_slip = 1.1
@@ -66,10 +69,11 @@ damping_compression = 6.0
 damping_relaxation = 8.0
 
 [node name="RearLeftMesh" parent="RearLeft" instance=ExtResource("3")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+scale = Vector3(1, 1, -1)
 
 [node name="RearRight" type="VehicleWheel3D" parent="."]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.6, 1.5)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.5, 1.5)
 use_as_traction = true
 wheel_radius = 0.45
 wheel_friction_slip = 1.1
@@ -80,3 +84,5 @@ damping_compression = 6.0
 damping_relaxation = 8.0
 
 [node name="RearRightMesh" parent="RearRight" instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+scale = Vector3(-1, 1, -1)
