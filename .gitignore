@@ -1,0 +1,12 @@
+# Godot
+**/.godot/
+**/.import/
+*.import
+
+# Addons (local/plugin binaries)
+/touchpadviewer/addons/py4godot/
+/touchpadviewer/addons/godot_super-wakatime/
+
+# OS
+.DS_Store
+Thumbs.db
