@@ -58,7 +58,8 @@ func _process(_delta):
 
 func _draw():
 	# Draw a simple steering wheel driven by the joystick axis
-	var center = get_viewport_rect().size * 0.5
+	var view_size = get_viewport_rect().size
+	var center = Vector2(view_size.x * 0.3, view_size.y * 0.5)
 	var radius = 120.0
 	draw_circle(center, radius, Color.WHITE)
 	var hand = Vector2.RIGHT.rotated(wheel_angle) * (radius - 20.0)
@@ -66,10 +67,12 @@ func _draw():
 	draw_string(font, center + Vector2(-70, radius + 30), "steer: " + str(steer), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
 	draw_string(font, center + Vector2(-70, radius + 50), "wheel: " + str(wheel_angle), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
 	draw_string(font, center + Vector2(-70, radius + 70), "pads: " + str(Input.get_connected_joypads().size()), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
-	draw_string(font, center + Vector2(-70, radius + 90), "gear: " + str(gear), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+	var gear_label = "R" if gear < 0 else str(gear)
+	var gear_color = Color(1, 0.2, 0.2) if gear < 0 else Color.WHITE
+	draw_string(font, center + Vector2(-70, radius + 90), "gear: " + gear_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gear_color)
 
 	# Draw a simple 2x2 shifter grid on the right side
-	var shifter_origin = center + Vector2(200, -70)
+	var shifter_origin = Vector2(view_size.x * 0.65, view_size.y * 0.35)
 	var box = Vector2(80, 70)
 	for row in range(2):
 		for col in range(2):
@@ -79,7 +82,13 @@ func _draw():
 			draw_rect(Rect2(pos, box), color, false, 3.0)
 			draw_string(font, pos + Vector2(30, 42), str(idx), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, color)
 
+	var shifter_label = "R" if gear < 0 else str(gear)
+	var shifter_color = Color(1, 0.2, 0.2) if gear < 0 else Color.WHITE
+	draw_string(font, shifter_origin + Vector2(0, box.y * 2 + 24), "shift: " + shifter_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, shifter_color)
+
 func _read_gear(pad_id):
+	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_BACK):
+		return -1
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_A):
 		return 1
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_B):
@@ -88,10 +97,6 @@ func _read_gear(pad_id):
 		return 3
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_Y):
 		return 4
-	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_LEFT_SHOULDER):
-		return 5
-	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_RIGHT_SHOULDER):
-		return 6
 	return 0
 
 @export var steer_delta_scale := 0.1

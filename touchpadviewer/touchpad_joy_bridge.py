@@ -80,7 +80,7 @@ def main():
     abs_x = dev.absinfo(ecodes.ABS_MT_POSITION_X)
     abs_y = dev.absinfo(ecodes.ABS_MT_POSITION_Y)
 
-    # Virtual joystick with X/Y axes and four gear buttons.
+    # Virtual joystick with X/Y axes, four gear buttons, and reverse.
     capabilities = {
         ecodes.EV_ABS: [
             (ecodes.ABS_X, AbsInfo(0, -32768, 32767, 0, 0, 0)),
@@ -92,6 +92,7 @@ def main():
             ecodes.BTN_EAST,
             ecodes.BTN_WEST,
             ecodes.BTN_NORTH,
+            ecodes.BTN_SELECT,
         ],
     }
 
@@ -143,6 +144,7 @@ def main():
     pending_gear = 0
     pending_since = 0.0
     gear_hold_time = 0.12
+    reverse_pressed = False
 
     last_print = 0.0
 
@@ -162,6 +164,9 @@ def main():
                 elif event.code == ecodes.ABS_MT_POSITION_Y:
                     slot = slots.setdefault(current_slot, {"id": None, "x": None, "y": None})
                     slot["y"] = event.value
+            elif event.type == ecodes.EV_KEY:
+                if event.code in (ecodes.BTN_LEFT, ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE):
+                    reverse_pressed = event.value == 1
 
             elif event.type == ecodes.EV_SYN and event.code == ecodes.SYN_REPORT:
                 # Use the leftmost active slot on the left half for steering.
@@ -206,36 +211,25 @@ def main():
                 if shift_slot:
                     u = (shift_slot["x"] - right_min_x) / max(1.0, (right_max_x - right_min_x))
                     v = (shift_slot["y"] - abs_y.min) / max(1.0, (abs_y.max - abs_y.min))
-                    # Define gate rectangles with margins and gaps; outside is neutral.
-                    margin = config["shift_margin"]
-                    gap = config["shift_gap"]
-                    col_w = (1.0 - 2.0 * margin - gap) / 2.0
-                    row_h = (1.0 - 2.0 * margin - gap) / 2.0
-                    cols = [
-                        (margin, margin + col_w),
-                        (margin + col_w + gap, margin + 2.0 * col_w + gap),
-                    ]
-                    rows = [
-                        (margin, margin + row_h),
-                        (margin + row_h + gap, margin + 2.0 * row_h + gap),
-                    ]
-
-                    col = -1
-                    for i, (c0, c1) in enumerate(cols):
-                        if c0 <= u <= c1:
-                            col = i
-                            break
-
-                    row = -1
-                    for i, (r0, r1) in enumerate(rows):
-                        if r0 <= v <= r1:
-                            row = i
-                            break
-
                     now = time.monotonic()
                     neutral_min = config["neutral_min"]
                     neutral_max = config["neutral_max"]
-                    in_neutral = neutral_min <= u <= neutral_max and neutral_min <= v <= neutral_max
+                    in_neutral = (
+                        neutral_min <= u <= neutral_max
+                        or neutral_min <= v <= neutral_max
+                    )
+
+                    col = -1
+                    if u < neutral_min:
+                        col = 0
+                    elif u > neutral_max:
+                        col = 1
+
+                    row = -1
+                    if v < neutral_min:
+                        row = 0
+                    elif v > neutral_max:
+                        row = 1
 
                     if in_neutral:
                         gear = 0
@@ -282,6 +276,7 @@ def main():
                 ui.write(ecodes.EV_KEY, ecodes.BTN_EAST, 1 if gear == 2 else 0)
                 ui.write(ecodes.EV_KEY, ecodes.BTN_WEST, 1 if gear == 3 else 0)
                 ui.write(ecodes.EV_KEY, ecodes.BTN_NORTH, 1 if gear == 4 else 0)
+                ui.write(ecodes.EV_KEY, ecodes.BTN_SELECT, 1 if reverse_pressed else 0)
                 ui.syn()
 
                 # Reload config periodically for live tuning.
