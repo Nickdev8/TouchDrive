@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Touchpad Finger Viewer</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #111;
+    color: #eee;
+    font-family: system-ui, sans-serif;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+  canvas.width = window.innerWidth * devicePixelRatio;
+  canvas.height = window.innerHeight * devicePixelRatio;
+  canvas.style.width = window.innerWidth + "px";
+  canvas.style.height = window.innerHeight + "px";
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+window.addEventListener("resize", resize);
+resize();
+
+const fingers = new Map();
+
+canvas.addEventListener("pointerdown", e => {
+  if (e.pointerType !== "touch") return;
+  fingers.set(e.pointerId, e);
+});
+
+canvas.addEventListener("pointermove", e => {
+  if (!fingers.has(e.pointerId)) return;
+  fingers.set(e.pointerId, e);
+});
+
+canvas.addEventListener("pointerup", e => {
+  fingers.delete(e.pointerId);
+});
+
+canvas.addEventListener("pointercancel", e => {
+  fingers.delete(e.pointerId);
+});
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (const [id, e] of fingers) {
+    ctx.beginPath();
+    ctx.arc(e.clientX, e.clientY, 30, 0, Math.PI * 2);
+    ctx.strokeStyle = "#4cc9f0";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = "#fff";
+    ctx.fillText(
+      `id ${id}\n${Math.round(e.clientX)}, ${Math.round(e.clientY)}`,
+      e.clientX + 35,
+      e.clientY
+    );
+  }
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+</body>
+</html>
