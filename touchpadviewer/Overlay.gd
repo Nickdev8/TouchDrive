@@ -5,6 +5,10 @@ var steer_angle := 0.0
 var gear := 0
 var pads := 0
 var throttle := 0.0
+var right_f1 := Vector2.ZERO
+var right_f2 := Vector2.ZERO
+var right_touch_active := false
+var right_two_fingers := false
 
 var font: Font
 
@@ -28,9 +32,23 @@ func _draw():
 	draw_string(font, center + Vector2(-60, radius + 40), "gear: " + gear_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gear_color)
 	draw_string(font, center + Vector2(-60, radius + 60), "pads: " + str(pads), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
 
+	# Joystick vector display (steer/throttle)
+	var vec_origin = center + Vector2(120, -40)
+	var vec_size = Vector2(80, 80)
+	var vec_center = vec_origin + vec_size * 0.5
+	draw_rect(Rect2(vec_origin, vec_size), Color(0.8, 0.8, 0.8), false, 2.0)
+	draw_line(Vector2(vec_center.x, vec_origin.y), Vector2(vec_center.x, vec_origin.y + vec_size.y), Color(0.5, 0.5, 0.5), 1.0)
+	draw_line(Vector2(vec_origin.x, vec_center.y), Vector2(vec_origin.x + vec_size.x, vec_center.y), Color(0.5, 0.5, 0.5), 1.0)
+	var vx = clamp(steer, -1.0, 1.0)
+	var vy = clamp(-throttle, -1.0, 1.0)
+	var dot = vec_center + Vector2(vx, vy) * (vec_size.x * 0.45)
+	draw_circle(dot, 4.0, Color(1, 0.6, 0.2))
+
 	# 2x2 shifter grid on the bottom-right
 	var shifter_origin = Vector2(view.x * 0.65, view.y * 0.65)
 	var box = Vector2(70, 60)
+	var grid_size = Vector2(box.x * 2 + 12, box.y * 2 + 12)
+	var grid_rect = Rect2(shifter_origin, grid_size)
 	for row in range(2):
 		for col in range(2):
 			var idx = col * 2 + row + 1
@@ -45,6 +63,26 @@ func _draw():
 	# Throttle slider next to the shifter
 	var slider_pos = shifter_origin + Vector2(box.x * 2 + 20, 0)
 	var slider_size = Vector2(14, box.y * 2 + 12)
-	var fill_h = slider_size.y * clamp(throttle, 0.0, 1.0)
+	var mid = slider_pos.y + slider_size.y * 0.5
 	draw_rect(Rect2(slider_pos, slider_size), Color(0.8, 0.8, 0.8), false, 2.0)
-	draw_rect(Rect2(slider_pos + Vector2(0, slider_size.y - fill_h), Vector2(slider_size.x, fill_h)), Color(1, 0.6, 0.2), true)
+	draw_line(Vector2(slider_pos.x, mid), Vector2(slider_pos.x + slider_size.x, mid), Color(0.6, 0.6, 0.6), 2.0)
+	var t = clamp(throttle, -1.0, 1.0)
+	if t > 0.0:
+		var h = (slider_size.y * 0.5) * t
+		draw_rect(Rect2(Vector2(slider_pos.x, mid - h), Vector2(slider_size.x, h)), Color(0.2, 0.8, 0.2), true)
+	elif t < 0.0:
+		var h = (slider_size.y * 0.5) * abs(t)
+		draw_rect(Rect2(Vector2(slider_pos.x, mid), Vector2(slider_size.x, h)), Color(0.9, 0.4, 0.2), true)
+
+	# Right-side finger positions on top of the shifter grid
+	if right_touch_active:
+		var f1 = _map_finger(right_f1, grid_rect)
+		draw_circle(f1, 5.0, Color(0.2, 0.7, 1.0))
+	if right_two_fingers:
+		var f2 = _map_finger(right_f2, grid_rect)
+		draw_circle(f2, 5.0, Color(1.0, 0.6, 0.2))
+
+func _map_finger(value, rect):
+	var u = clamp((value.x + 1.0) * 0.5, 0.0, 1.0)
+	var v = clamp((value.y + 1.0) * 0.5, 0.0, 1.0)
+	return rect.position + Vector2(u * rect.size.x, v * rect.size.y)
