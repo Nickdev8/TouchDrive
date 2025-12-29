@@ -80,7 +80,7 @@ def main():
     abs_x = dev.absinfo(ecodes.ABS_MT_POSITION_X)
     abs_y = dev.absinfo(ecodes.ABS_MT_POSITION_Y)
 
-    # Virtual joystick with X/Y axes, four gear buttons, and reverse.
+    # Virtual joystick with X/Y axes, four gear buttons, and touch flags.
     capabilities = {
         ecodes.EV_ABS: [
             (ecodes.ABS_X, AbsInfo(0, -32768, 32767, 0, 0, 0)),
@@ -93,6 +93,8 @@ def main():
             ecodes.BTN_WEST,
             ecodes.BTN_NORTH,
             ecodes.BTN_SELECT,
+            ecodes.BTN_START,
+            ecodes.BTN_THUMBL,
         ],
     }
 
@@ -114,6 +116,7 @@ def main():
             "neutral_min": 0.45,
             "neutral_max": 0.55,
             "gear_hold_time": 0.12,
+            "neutral_reset_hold": 0.15,
         }
         if not path:
             return defaults
@@ -145,6 +148,10 @@ def main():
     pending_since = 0.0
     gear_hold_time = 0.12
     reverse_pressed = False
+    lock_active = False
+    locked_gear = 0
+    last_throttle = 0.0
+    neutral_since = 0.0
 
     last_print = 0.0
 
@@ -197,86 +204,124 @@ def main():
                         last_angle = None
                 else:
                     last_angle = None
+                left_touch_active = steer_slot != None
 
-                # The leftmost active slot on the right half controls the 2x2 H-pattern shifter.
+                # Right-side fingers control the shifter and throttle.
                 gear = 0
-                shift_slot = None
+                throttle = last_throttle
+                right_fingers = []
                 for s in sorted(slots.keys()):
                     info = slots[s]
                     if info.get("x") is None or info.get("y") is None:
                         continue
                     if info["x"] >= right_min_x:
-                        shift_slot = info
-                        break
-                if shift_slot:
-                    u = (shift_slot["x"] - right_min_x) / max(1.0, (right_max_x - right_min_x))
-                    v = (shift_slot["y"] - abs_y.min) / max(1.0, (abs_y.max - abs_y.min))
-                    now = time.monotonic()
-                    neutral_min = config["neutral_min"]
-                    neutral_max = config["neutral_max"]
-                    in_neutral = (
-                        neutral_min <= u <= neutral_max
-                        or neutral_min <= v <= neutral_max
-                    )
+                        right_fingers.append(info)
 
-                    col = -1
-                    if u < neutral_min:
-                        col = 0
-                    elif u > neutral_max:
-                        col = 1
+                if len(right_fingers) >= 2:
+                    if not lock_active:
+                        locked_gear = last_gear
+                        lock_active = True
+                    gear = locked_gear
+                    avg_v = sum(
+                        (f["y"] - abs_y.min) / max(1.0, (abs_y.max - abs_y.min))
+                        for f in right_fingers
+                    ) / len(right_fingers)
+                    throttle = max(0.0, min(1.0, 1.0 - avg_v))
+                    last_throttle = throttle
+                    pending_gear = 0
+                    neutral_latched = False
+                else:
+                    lock_active = False
+                    shift_slot = right_fingers[0] if right_fingers else None
+                    if shift_slot:
+                        u = (shift_slot["x"] - right_min_x) / max(1.0, (right_max_x - right_min_x))
+                        v = (shift_slot["y"] - abs_y.min) / max(1.0, (abs_y.max - abs_y.min))
+                        now = time.monotonic()
+                        neutral_min = config["neutral_min"]
+                        neutral_max = config["neutral_max"]
+                        in_neutral_cross = (
+                            neutral_min <= u <= neutral_max
+                            or neutral_min <= v <= neutral_max
+                        )
+                        in_neutral_center = (
+                            neutral_min <= u <= neutral_max
+                            and neutral_min <= v <= neutral_max
+                        )
 
-                    row = -1
-                    if v < neutral_min:
-                        row = 0
-                    elif v > neutral_max:
-                        row = 1
+                        col = -1
+                        if u < neutral_min:
+                            col = 0
+                        elif u > neutral_max:
+                            col = 1
 
-                    if in_neutral:
-                        gear = 0
-                        neutral_latched = True
-                        last_gear = 0
-                        pending_gear = 0
-                    elif row != -1 and col != -1:
-                        if col == 1:
-                            row = 1 - row
-                        gear_candidate = col * 2 + row + 1
-                        if neutral_latched:
-                            if gear_candidate != pending_gear:
-                                pending_gear = gear_candidate
-                                pending_since = now
-                            if now - pending_since >= config["gear_hold_time"]:
-                                gear = gear_candidate
+                        row = -1
+                        if v < neutral_min:
+                            row = 0
+                        elif v > neutral_max:
+                            row = 1
+
+                        if in_neutral_cross:
+                            if len(right_fingers) == 1 and in_neutral_center:
+                                if neutral_since == 0.0:
+                                    neutral_since = now
+                                if now - neutral_since >= config["neutral_reset_hold"]:
+                                    gear = 0
+                                    neutral_latched = True
+                                    last_gear = 0
+                                    pending_gear = 0
+                                else:
+                                    gear = last_gear
+                                    neutral_latched = False
+                                    pending_gear = 0
+                            else:
+                                neutral_since = 0.0
+                                gear = last_gear
                                 neutral_latched = False
+                                pending_gear = 0
+                        elif row != -1 and col != -1:
+                            neutral_since = 0.0
+                            if col == 1:
+                                row = 1 - row
+                            gear_candidate = col * 2 + row + 1
+                            if neutral_latched:
+                                if gear_candidate != pending_gear:
+                                    pending_gear = gear_candidate
+                                    pending_since = now
+                                if now - pending_since >= config["gear_hold_time"]:
+                                    gear = gear_candidate
+                                    neutral_latched = False
+                                    pending_gear = 0
+                                else:
+                                    gear = last_gear
+                            elif gear_candidate == last_gear:
+                                gear = last_gear
                                 pending_gear = 0
                             else:
                                 gear = last_gear
-                        elif gear_candidate == last_gear:
-                            gear = last_gear
-                            pending_gear = 0
+                                pending_gear = 0
                         else:
+                            neutral_since = 0.0
                             gear = last_gear
+                            neutral_latched = False
                             pending_gear = 0
                     else:
-                        gear = 0
-                        neutral_latched = True
-                        last_gear = 0
+                        neutral_since = 0.0
+                        gear = last_gear
+                        neutral_latched = False
                         pending_gear = 0
-                else:
-                    gear = 0
-                    neutral_latched = True
-                    last_gear = 0
-                    pending_gear = 0
 
                 if gear != 0:
                     last_gear = gear
                 ui.write(ecodes.EV_ABS, ecodes.ABS_X, steer)
-                ui.write(ecodes.EV_ABS, ecodes.ABS_Y, 0)
+                ui.write(ecodes.EV_ABS, ecodes.ABS_Y, int((throttle * 2.0 - 1.0) * 32767))
                 ui.write(ecodes.EV_KEY, ecodes.BTN_JOYSTICK, active_flag)
                 ui.write(ecodes.EV_KEY, ecodes.BTN_SOUTH, 1 if gear == 1 else 0)
                 ui.write(ecodes.EV_KEY, ecodes.BTN_EAST, 1 if gear == 2 else 0)
                 ui.write(ecodes.EV_KEY, ecodes.BTN_WEST, 1 if gear == 3 else 0)
                 ui.write(ecodes.EV_KEY, ecodes.BTN_NORTH, 1 if gear == 4 else 0)
                 ui.write(ecodes.EV_KEY, ecodes.BTN_SELECT, 1 if reverse_pressed else 0)
+                ui.write(ecodes.EV_KEY, ecodes.BTN_START, 1 if len(right_fingers) > 0 else 0)
+                ui.write(ecodes.EV_KEY, ecodes.BTN_THUMBL, 1 if left_touch_active else 0)
                 ui.syn()
 
                 # Reload config periodically for live tuning.

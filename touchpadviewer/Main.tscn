@@ -18,7 +18,6 @@ size = Vector3(60, 1, 60)
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
-camera_steer_influence = 0.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.6967067, 0.4050497, -0.59205955, 0, 0.8253356, 0.5646425, 0.7173561, -0.3933902, 0.57501686, 0, 0, 0)
