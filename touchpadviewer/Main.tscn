@@ -1,16 +1,10 @@
-[gd_scene load_steps=14 format=3 uid="uid://clu05bd2gt0m3"]
+[gd_scene load_steps=12 format=3 uid="uid://clu05bd2gt0m3"]
 
 [ext_resource type="Script" uid="uid://c2l7k7tlo6ve8" path="res://Main.gd" id="1"]
-[ext_resource type="PackedScene" uid="uid://b7q0rpwvsrp3f" path="res://assets/source/models/Cars.fbx" id="2"]
+[ext_resource type="PackedScene" uid="uid://8wqo6lkf4dyr" path="res://Vehicle.tscn" id="2"]
 [ext_resource type="Script" uid="uid://qeyiloi24a70" path="res://Overlay.gd" id="3"]
 [ext_resource type="Script" uid="uid://5wvt2sle8vml" path="res://CameraSettings.gd" id="4"]
-[ext_resource type="Script" uid="uid://gcnqrn3jqppa" path="res://VehicleSettings.gd" id="5"]
-
-[sub_resource type="BoxShape3D" id="2"]
-size = Vector3(2.4, 0.8, 4.2)
-
-[sub_resource type="CylinderMesh" id="3"]
-height = 0.4
+[ext_resource type="PackedScene" uid="uid://b10xgoo30lxyg" path="res://block.tscn" id="4_fos0i"]
 
 [sub_resource type="StandardMaterial3D" id="6"]
 albedo_color = Color(0.2, 0.45, 0.25, 1)
@@ -40,9 +34,8 @@ ambient_light_color = Color(1, 0.88, 0.78, 1)
 ambient_light_energy = 1.35
 tonemap_mode = 2
 fog_enabled = true
-fog_color = Color(0.9, 0.72, 0.58, 1)
-fog_density = 0.008
 fog_sun_scatter = 0.35
+fog_density = 0.008
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
@@ -54,73 +47,13 @@ light_energy = 2.0
 shadow_enabled = true
 shadow_bias = 0.04
 shadow_normal_bias = 0.7
-directional_shadow_softness = 0.6
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 10)
 script = ExtResource("4")
 
-[node name="Vehicle" type="VehicleBody3D" parent="."]
+[node name="Vehicle" parent="." instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-mass = 800.0
-script = ExtResource("5")
-
-[node name="ChassisModel" parent="Vehicle" instance=ExtResource("2")]
-
-[node name="ChassisCollision" type="CollisionShape3D" parent="Vehicle"]
-shape = SubResource("2")
-
-[node name="FrontLeft" type="VehicleWheel3D" parent="Vehicle"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.3, -2.4)
-use_as_steering = true
-wheel_radius = 0.8
-suspension_travel = 0.25
-suspension_stiffness = 25.0
-damping_compression = 3.0
-damping_relaxation = 4.0
-
-[node name="FrontLeftMesh" type="MeshInstance3D" parent="Vehicle/FrontLeft"]
-transform = Transform3D(-7.2399803e-06, -3.5, 0, 2, -1.2669965e-05, 0, 0, 0, 2, 0, 0, 0)
-mesh = SubResource("3")
-
-[node name="FrontRight" type="VehicleWheel3D" parent="Vehicle"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.3, -2.4)
-use_as_steering = true
-wheel_radius = 0.8
-suspension_travel = 0.25
-suspension_stiffness = 25.0
-damping_compression = 3.0
-damping_relaxation = 4.0
-
-[node name="FrontRightMesh" type="MeshInstance3D" parent="Vehicle/FrontRight"]
-transform = Transform3D(-7.2399803e-06, -3.5, 0, 2, -1.2669965e-05, 0, 0, 0, 2, 0, 0, 0)
-mesh = SubResource("3")
-
-[node name="RearLeft" type="VehicleWheel3D" parent="Vehicle"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.3, 1.5)
-use_as_traction = true
-wheel_radius = 0.8
-suspension_travel = 0.25
-suspension_stiffness = 25.0
-damping_compression = 3.0
-damping_relaxation = 4.0
-
-[node name="RearLeftMesh" type="MeshInstance3D" parent="Vehicle/RearLeft"]
-transform = Transform3D(-7.2399803e-06, -3.5, 0, 2, -1.2669965e-05, 0, 0, 0, 2, 0, 0, 0)
-mesh = SubResource("3")
-
-[node name="RearRight" type="VehicleWheel3D" parent="Vehicle"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.3, 1.5)
-use_as_traction = true
-wheel_radius = 0.8
-suspension_travel = 0.25
-suspension_stiffness = 25.0
-damping_compression = 3.0
-damping_relaxation = 4.0
-
-[node name="RearRightMesh" type="MeshInstance3D" parent="Vehicle/RearRight"]
-transform = Transform3D(-7.2399803e-06, -3.5, 0, 2, -1.2669965e-05, 0, 0, 0, 2, 0, 0, 0)
-mesh = SubResource("3")
 
 [node name="Ground" type="StaticBody3D" parent="."]
 
@@ -130,6 +63,29 @@ mesh = SubResource("4")
 
 [node name="GroundCollision" type="CollisionShape3D" parent="Ground"]
 shape = SubResource("5")
+
+[node name="Obstacles" type="Node3D" parent="."]
+
+[node name="Block" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 18.057373, 0.10738015, -1.4129667)
+
+[node name="Block2" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.845246, 0.10738015, 1.3589344)
+
+[node name="Block3" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 17.541924, 0.10738015, 1.6760473)
+
+[node name="Block4" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.294601, 0.10738015, -2.4446483)
+
+[node name="Block5" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 17.443855, 0.10738015, -4.5442295)
+
+[node name="Block6" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.414838, 0.10738015, -6.4834332)
+
+[node name="Block7" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 18.061703, 0.10738015, -8.069028)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("9")

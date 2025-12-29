@@ -1,8 +1,13 @@
 extends Node3D
 
+# Godot doesn't expose HAT axis constants; use raw axis indices for ABS_HAT0X/Y.
+const JOY_AXIS_HAT_X := 6
+const JOY_AXIS_HAT_Y := 7
+
 # Bridge process id
 var bridge_pid := -1
 var config_path := ""
+var state_path := ""
 var _last_config := {}
 
 @export var bridge_debug_terminal := false
@@ -17,15 +22,17 @@ var _last_config := {}
 @export var neutral_reset_hold := 0.15
 @export var throttle_neutral_band := 0.2
 @export var throttle_sensitivity := 0.6
+@export var controller_deadzone := 0.2
+@export var auto_center_steer := false
 
-@onready var vehicle := $Vehicle
-@onready var front_left := $Vehicle/FrontLeft
-@onready var front_right := $Vehicle/FrontRight
-@onready var rear_left := $Vehicle/RearLeft
-@onready var rear_right := $Vehicle/RearRight
+var vehicle
+var front_left
+var front_right
+var rear_left
+var rear_right
 @onready var camera := $Camera3D
 @onready var overlay := $CanvasLayer/Overlay
-@onready var vehicle_settings := $Vehicle
+var vehicle_settings
 @onready var camera_settings := $Camera3D
 
 var gear := 0
@@ -34,20 +41,31 @@ var steer_angle := 0.0
 var throttle := 0.0
 var right_touch_active := false
 var left_touch_active := false
-var brake_force := 0.0
 var camera_yaw := 0.0
 var camera_pitch := -0.4
 var right_f1 := Vector2.ZERO
 var right_f2 := Vector2.ZERO
 var right_two_fingers := false
+var left_f1 := Vector2.ZERO
+var left_finger_active := false
+var brake_pressed := false
+
+@export var respawn_height := -5.0
+@export var respawn_position := Vector3(0, 1.2, 0)
+@export var respawn_rotation := Vector3.ZERO
 
 func _ready():
 	# Start the touchpad->joystick bridge so Godot can read joystick input
 	var script_path = ProjectSettings.globalize_path("res://touchpad_joy_bridge.py")
 	config_path = ProjectSettings.globalize_path("user://touchpad_joy_config.json")
+	state_path = ProjectSettings.globalize_path("user://touchpad_joy_state.json")
 	_write_config()
 	bridge_pid = _start_bridge(script_path)
 	tree_exiting.connect(_on_tree_exiting)
+	_cache_vehicle_nodes()
+	if vehicle:
+		respawn_position = vehicle.global_transform.origin
+		respawn_rotation = vehicle.rotation
 
 func _exit_tree():
 	_stop_bridge()
@@ -65,7 +83,7 @@ func _stop_bridge():
 		bridge_pid = -1
 
 func _start_bridge(script_path):
-	var args = [script_path, "--auto", "--config", config_path]
+	var args = [script_path, "--auto", "--config", config_path, "--state", state_path]
 	if not bridge_debug_terminal:
 		return OS.create_process("python3", args)
 
@@ -82,7 +100,9 @@ func _start_bridge(script_path):
 	return OS.create_process("python3", args)
 
 func _physics_process(delta):
+	_check_respawn()
 	_update_camera_orbit(delta)
+	_read_bridge_state()
 	_update_input()
 	_apply_vehicle(delta)
 	_update_camera(delta)
@@ -98,28 +118,22 @@ func _update_input():
 		right_f1 = Vector2.ZERO
 		right_f2 = Vector2.ZERO
 		right_two_fingers = false
+		left_f1 = Vector2.ZERO
+		left_finger_active = false
+		brake_pressed = false
 		return
-	var pad = pads[0]
-	steer = Input.get_joy_axis(pad, JOY_AXIS_LEFT_X)
-	if abs(steer) < 0.05:
-		steer = 0.0
-	right_touch_active = Input.is_joy_button_pressed(pad, JOY_BUTTON_START)
-	left_touch_active = Input.is_joy_button_pressed(pad, JOY_BUTTON_LEFT_STICK)
-	right_two_fingers = Input.is_joy_button_pressed(pad, JOY_BUTTON_RIGHT_SHOULDER)
-	if right_touch_active:
-		throttle = clamp(Input.get_joy_axis(pad, JOY_AXIS_LEFT_Y), -1.0, 1.0)
-	gear = _read_gear(pad)
-	right_f1 = Vector2(
-		Input.get_joy_axis(pad, JOY_AXIS_RIGHT_X),
-		Input.get_joy_axis(pad, JOY_AXIS_RIGHT_Y)
-	)
-	right_f2 = Vector2(
-		_axis_to_signed(Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_LEFT)),
-		_axis_to_signed(Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT))
-	)
+	var virtual_pad = _find_virtual_pad(pads)
+	var controller_pad = _find_controller_pad(pads)
+
+	if controller_pad != -1:
+		_read_controller_input(controller_pad)
+	else:
+		_read_touchpad_input(virtual_pad if virtual_pad != -1 else pads[0])
 
 func _apply_vehicle(_delta):
-	if abs(steer) < 0.01 and not left_touch_active:
+	if not vehicle or not front_left or not front_right or not rear_left or not rear_right:
+		return
+	if auto_center_steer and abs(steer) < 0.01 and not left_touch_active:
 		steer_angle = lerp(steer_angle, 0.0, clamp(vehicle_settings.steer_return_rate * _delta, 0.0, 1.0))
 	else:
 		steer_angle += steer * vehicle_settings.steer_rate * _delta
@@ -129,20 +143,13 @@ func _apply_vehicle(_delta):
 
 	var engine_force = 0.0
 	var brake = 0.0
-	if Input.is_key_pressed(KEY_SPACE):
+	if brake_pressed:
 		brake = vehicle_settings.max_brake
-	if right_touch_active:
-		brake_force = max(0.0, brake_force - vehicle_settings.brake_return_rate * _delta)
-	else:
-		brake_force = min(vehicle_settings.max_brake, brake_force + vehicle_settings.brake_return_rate * _delta)
-	brake = max(brake, brake_force)
 	if gear > 0:
 		var ratio = _gear_ratio(gear)
 		engine_force = vehicle_settings.max_engine_force * ratio * throttle
 	elif gear < 0:
 		engine_force = -vehicle_settings.reverse_force * abs(throttle)
-	elif throttle < 0.0:
-		engine_force = vehicle_settings.max_engine_force * throttle
 	if brake > 0.0:
 		engine_force = 0.0
 
@@ -156,17 +163,19 @@ func _apply_vehicle(_delta):
 func _gear_ratio(value):
 	match value:
 		1:
-			return 0.45
+			return 0.4
 		2:
-			return 0.65
+			return 0.75
 		3:
-			return 0.85
+			return 1.1
 		4:
-			return 1.0
+			return 1.5
 		_:
 			return 0.5
 
 func _update_camera(delta):
+	if not vehicle:
+		return
 	var pivot = vehicle.global_transform.origin
 	var offset = Vector3(0, 0, camera_settings.camera_distance)
 	var basis = Basis(Vector3.UP, camera_yaw) * Basis(Vector3.RIGHT, camera_pitch)
@@ -202,11 +211,11 @@ func _update_overlay():
 		overlay.right_f2 = right_f2
 		overlay.right_touch_active = right_touch_active
 		overlay.right_two_fingers = right_two_fingers
+		overlay.left_f1 = left_f1
+		overlay.left_touch_active = left_finger_active
 		overlay.queue_redraw()
 
 func _read_gear(pad_id):
-	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_BACK):
-		return -1
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_A):
 		return 1
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_B):
@@ -216,6 +225,120 @@ func _read_gear(pad_id):
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_Y):
 		return 4
 	return 0
+
+func _read_bridge_state():
+	if state_path.is_empty():
+		return
+	if not FileAccess.file_exists(state_path):
+		left_finger_active = false
+		return
+	var file = FileAccess.open(state_path, FileAccess.READ)
+	if not file:
+		left_finger_active = false
+		return
+	var content = file.get_as_text()
+	file.close()
+	var data = JSON.parse_string(content)
+	if typeof(data) != TYPE_DICTIONARY:
+		left_finger_active = false
+		return
+	var left = data.get("left", {})
+	if typeof(left) != TYPE_DICTIONARY:
+		left_finger_active = false
+		return
+	left_finger_active = bool(left.get("active", false))
+	var lx = float(left.get("x", 0.5))
+	var ly = float(left.get("y", 0.5))
+	left_f1 = Vector2(lx * 2.0 - 1.0, ly * 2.0 - 1.0)
+
+func _cache_vehicle_nodes():
+	vehicle = get_node_or_null("Vehicle/Vehicle")
+	if not vehicle:
+		vehicle = get_node_or_null("Vehicle")
+	vehicle_settings = vehicle
+	if not vehicle:
+		push_warning("Vehicle node missing in Main scene.")
+		return
+	front_left = vehicle.get_node_or_null("FrontLeft")
+	front_right = vehicle.get_node_or_null("FrontRight")
+	rear_left = vehicle.get_node_or_null("RearLeft")
+	rear_right = vehicle.get_node_or_null("RearRight")
+	if not front_left or not front_right or not rear_left or not rear_right:
+		push_warning("Vehicle wheel nodes missing under Vehicle instance.")
+
+func _read_controller_input(pad):
+	right_touch_active = true
+	left_touch_active = false
+	right_two_fingers = false
+	left_finger_active = false
+	left_f1 = Vector2.ZERO
+	right_f1 = Vector2.ZERO
+	right_f2 = Vector2.ZERO
+	brake_pressed = Input.is_joy_button_pressed(pad, JOY_BUTTON_BACK)
+
+	steer = Input.get_joy_axis(pad, JOY_AXIS_LEFT_X)
+	if abs(steer) < controller_deadzone:
+		steer = 0.0
+	throttle = -Input.get_joy_axis(pad, JOY_AXIS_LEFT_Y)
+	if abs(throttle) < controller_deadzone:
+		throttle = 0.0
+
+	var rx = Input.get_joy_axis(pad, JOY_AXIS_RIGHT_X)
+	var ry = Input.get_joy_axis(pad, JOY_AXIS_RIGHT_Y)
+	if abs(rx) < controller_deadzone and abs(ry) < controller_deadzone:
+		gear = 0
+	else:
+		var col = 0 if rx < 0.0 else 1
+		var row = 0 if ry < 0.0 else 1
+		if col == 1:
+			row = 1 - row
+		gear = col * 2 + row + 1
+
+	if Input.is_joy_button_pressed(pad, JOY_BUTTON_BACK):
+		gear = -1
+
+func _read_touchpad_input(pad):
+	steer = Input.get_joy_axis(pad, JOY_AXIS_LEFT_X)
+	if abs(steer) < 0.05:
+		steer = 0.0
+	right_touch_active = Input.is_joy_button_pressed(pad, JOY_BUTTON_START)
+	left_touch_active = Input.is_joy_button_pressed(pad, JOY_BUTTON_LEFT_STICK)
+	right_two_fingers = Input.is_joy_button_pressed(pad, JOY_BUTTON_RIGHT_SHOULDER)
+	brake_pressed = Input.is_joy_button_pressed(pad, JOY_BUTTON_BACK)
+	if right_touch_active:
+		throttle = clamp(Input.get_joy_axis(pad, JOY_AXIS_LEFT_Y), -1.0, 1.0)
+	gear = _read_gear(pad)
+	right_f1 = Vector2(
+		Input.get_joy_axis(pad, JOY_AXIS_RIGHT_X),
+		Input.get_joy_axis(pad, JOY_AXIS_RIGHT_Y)
+	)
+	right_f2 = Vector2(
+		_axis_to_signed(Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_LEFT)),
+		_axis_to_signed(Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT))
+	)
+
+func _find_virtual_pad(pads):
+	for pad in pads:
+		var name = Input.get_joy_name(pad).to_lower()
+		if name.find("touchpad-virtual-joystick") != -1:
+			return pad
+	return -1
+
+func _find_controller_pad(pads):
+	for pad in pads:
+		var name = Input.get_joy_name(pad).to_lower()
+		if name.find("touchpad-virtual-joystick") == -1:
+			return pad
+	return -1
+
+func _check_respawn():
+	if vehicle.global_transform.origin.y < respawn_height or Input.is_key_pressed(KEY_R):
+		var xform = vehicle.global_transform
+		xform.origin = respawn_position
+		vehicle.global_transform = xform
+		vehicle.rotation = respawn_rotation
+		vehicle.linear_velocity = Vector3.ZERO
+		vehicle.angular_velocity = Vector3.ZERO
 
 func _axis_to_signed(value):
 	if value >= 0.0 and value <= 1.0:

@@ -9,6 +9,8 @@ var right_f1 := Vector2.ZERO
 var right_f2 := Vector2.ZERO
 var right_touch_active := false
 var right_two_fingers := false
+var left_f1 := Vector2.ZERO
+var left_touch_active := false
 
 var font: Font
 
@@ -19,14 +21,28 @@ func _draw():
 	var view = get_viewport_rect().size
 	var center = Vector2(view.x * 0.2, view.y * 0.8)
 	var radius = 70.0
-	var wheel_color = Color(1, 1, 1)
+	var wheel_color = Color(0.12, 0.12, 0.12)
+	var rim_color = Color(0.2, 0.2, 0.2)
 	var text_color = Color(1, 1, 1)
 	var gear_color = Color(1, 0.2, 0.2) if gear < 0 else text_color
 	var gear_label = "R" if gear < 0 else str(gear)
+	var display_throttle = throttle
 
-	draw_circle(center, radius, wheel_color)
-	var hand = Vector2.RIGHT.rotated(steer_angle) * (radius - 10.0)
-	draw_line(center, center + hand, Color(0, 0, 0), 4.0)
+	draw_arc(center, radius, 0.0, TAU, 64, rim_color, 10.0)
+	draw_arc(center, radius - 10.0, 0.0, TAU, 64, wheel_color, 8.0)
+	draw_circle(center, 10.0, rim_color)
+	for i in range(3):
+		var angle = steer_angle + TAU * (float(i) / 3.0)
+		var spoke_end = center + Vector2.RIGHT.rotated(angle) * (radius - 14.0)
+		draw_line(center, spoke_end, wheel_color, 6.0)
+	if left_touch_active:
+		var wheel_rect = Rect2(center - Vector2(radius, radius), Vector2(radius, radius) * 2.0)
+		var wheel_dot = _map_finger(left_f1, wheel_rect)
+		var offset = (wheel_dot - center)
+		if offset.length() > 1.0:
+			var hand = offset.normalized() * (radius - 8.0)
+			draw_line(center, center + hand, Color(0.9, 0.9, 0.9), 3.0)
+		draw_circle(wheel_dot, 5.0, Color(0.2, 0.7, 1.0))
 
 	draw_string(font, center + Vector2(-60, radius + 20), "steer: " + str(steer), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
 	draw_string(font, center + Vector2(-60, radius + 40), "gear: " + gear_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gear_color)
@@ -40,7 +56,7 @@ func _draw():
 	draw_line(Vector2(vec_center.x, vec_origin.y), Vector2(vec_center.x, vec_origin.y + vec_size.y), Color(0.5, 0.5, 0.5), 1.0)
 	draw_line(Vector2(vec_origin.x, vec_center.y), Vector2(vec_origin.x + vec_size.x, vec_center.y), Color(0.5, 0.5, 0.5), 1.0)
 	var vx = clamp(steer, -1.0, 1.0)
-	var vy = clamp(-throttle, -1.0, 1.0)
+	var vy = clamp(-display_throttle, -1.0, 1.0)
 	var dot = vec_center + Vector2(vx, vy) * (vec_size.x * 0.45)
 	draw_circle(dot, 4.0, Color(1, 0.6, 0.2))
 
@@ -66,7 +82,7 @@ func _draw():
 	var mid = slider_pos.y + slider_size.y * 0.5
 	draw_rect(Rect2(slider_pos, slider_size), Color(0.8, 0.8, 0.8), false, 2.0)
 	draw_line(Vector2(slider_pos.x, mid), Vector2(slider_pos.x + slider_size.x, mid), Color(0.6, 0.6, 0.6), 2.0)
-	var t = clamp(throttle, -1.0, 1.0)
+	var t = clamp(display_throttle, -1.0, 1.0)
 	if t > 0.0:
 		var h = (slider_size.y * 0.5) * t
 		draw_rect(Rect2(Vector2(slider_pos.x, mid - h), Vector2(slider_size.x, h)), Color(0.2, 0.8, 0.2), true)
