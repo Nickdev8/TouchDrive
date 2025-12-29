@@ -3,7 +3,8 @@
 ## Project Summary & Current State
 - Goal: a touchpad-driven off‑road driving prototype using a Linux multitouch bridge + a Godot 4.5.1 3D vehicle scene.
 - Current playable loop: steer on left side of touchpad, shift gears on right side (2x2), throttle by two‑finger scroll on right side, tap to brake.
-- HUD shows steering wheel, gear grid, throttle slider, and live finger positions for both pads.
+- HUD shows steering wheel, gear grid, throttle slider, live finger positions, and speed in km/h.
+- Vehicle tuning uses per‑gear torque scaling, per‑gear speed caps, and a lowered manual center of mass for stability.
 - Obstacles (ramps/steps/bumps) are placed in the scene for testing.
 
 ## Project Structure & Module Organization
@@ -15,11 +16,14 @@
 - `touchpadviewer/touchpad_joy_bridge.py` is the Linux MT → virtual joystick bridge (runtime dependency).
 - `touchpadviewer/assets/` stores models/textures (sources are ignored).
 - `old/` contains legacy or experimental scripts not used by the current app.
+- `tools/make_cliff_terrain.py` generates a Blender blockout `.blend` for cliff‑road terrain prototyping.
 
 ## Build, Test, and Development Commands
 - Run the project in the Godot editor: open `touchpadviewer/project.godot` and press Play.
 - The bridge is started automatically by `Main.gd`, but can be run manually:
   - `python3 touchpadviewer/touchpad_joy_bridge.py --auto`
+- Optional: generate a terrain blockout `.blend` via Blender:
+  - `blender --background --python tools/make_cliff_terrain.py`
 - There is no export or automated test pipeline yet.
 
 ## Coding Style & Naming Conventions
