@@ -10,7 +10,7 @@
 ## Project Structure & Module Organization
 - `touchpadviewer/` contains the Godot project (project file, scenes, scripts).
 - `touchpadviewer/Main.tscn` holds the 3D scene (vehicle, ground, obstacles, lighting).
-- `touchpadviewer/Main.gd` owns gameplay: starts the bridge, reads input, drives the vehicle, camera, respawn logic.
+- `touchpadviewer/Main.gd` owns camera + HUD wiring. Vehicle behavior lives in `VehicleController.gd`.
 - `touchpadviewer/Overlay.gd` draws the HUD (steering wheel, gears, throttle, finger dots).
 - `touchpadviewer/VehicleSettings.gd` and `touchpadviewer/CameraSettings.gd` store inspector‑tunable settings.
 - `touchpadviewer/touchpad_joy_bridge.py` is the Linux MT → virtual joystick bridge (runtime dependency).
@@ -43,10 +43,30 @@
 - PRs should include a short description, reproduction steps, and a screenshot or short clip when UI/input behavior changes.
 
 ## Configuration & Runtime Notes
-- Live tuning is driven by `user://touchpad_joy_config.json`, written by `Main.gd`.
+- Live tuning is driven by `user://touchpad_joy_config.json`, written by `VehicleController.gd`.
 - The bridge writes HUD state to `user://touchpad_joy_state.json` for left‑pad finger visualization.
-- Adjust tuning via exported fields in the `Main` node inspector; the bridge reloads the JSON periodically.
+- Adjust tuning via exported fields in the `Vehicle` node inspector; the bridge reloads the JSON periodically.
 - Linux input access may require permissions for `/dev/input/event*` and `/dev/uinput`.
+
+## Custom Wheel Physics (RigidBody + Hinge)
+- Vehicle is now a `RigidBody3D` chassis with 4 `RigidBody3D` wheels, each constrained by a `HingeJoint3D`.
+- Wheel placement is driven by anchor nodes under `WheelRig/Anchors` (move these to reposition wheels).
+- Front wheels steer by rotating the front anchor nodes on Y each frame.
+- Drive torque is applied to the rear wheel bodies; brakes damp the wheel angular velocity.
+- Wheel collision uses a `CylinderShape3D` rotated to roll on the X axis.
+
+### Tuning
+- Chassis + wheel parameters live on the `Vehicle` node via `VehicleSettings.gd` exports:
+  - `max_engine_force`, `reverse_force`, `max_brake`, `max_steer`, `steer_rate`, `steer_return_rate`
+  - `wheel_radius`, `wheel_width`, `wheel_mass`, `wheel_friction`, `wheel_linear_damp`, `wheel_angular_damp`
+  - `suspension_travel`, `suspension_stiffness`, `suspension_damping` (reserved if re-adding spring joints)
+- Mesh alignment:
+  - `wheel_mesh_rotation` in `VehicleSettings.gd` lets you align the visual wheel axle.
+  - `auto_center_wheel_mesh` in `VehicleController.gd` recenters wheel meshes at runtime.
+
+### Control Logic
+- `VehicleController.gd` handles input, gear logic, torque, braking, and steering pivot rotation.
+- Linux uses the touchpad bridge; Windows/macOS fall back to mouse controls.
 
 ## Next Features (Planned)
 - Larger off‑road test area (cliffs, uneven terrain, rock garden).

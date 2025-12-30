@@ -11,7 +11,7 @@ var _camera_first_person := true
 var _c_prev := false
 
 @export var first_person_offset := Vector3(0, 1.2, 0.4)
-@export var first_person_anchor_path := NodePath("Vehicle/InteriorCameraAnchor")
+@export var first_person_anchor_path := NodePath("Vehicle/WheelRig/Anchors/InteriorCameraAnchor")
 @export var first_person_look_yaw_scale := 0.35
 @export var first_person_look_max_yaw := 0.35
 @export var first_person_lateral_offset := 0.2
@@ -21,6 +21,8 @@ func _ready():
 	if not vehicle:
 		push_warning("Vehicle node missing in Main scene.")
 	_first_person_anchor = get_node_or_null(first_person_anchor_path)
+	if not _first_person_anchor:
+		_first_person_anchor = vehicle.find_child("InteriorCameraAnchor", true, false) if vehicle else null
 
 func _physics_process(delta):
 	_handle_camera_toggle()
