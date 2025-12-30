@@ -57,8 +57,8 @@ func _update_camera(delta):
 	else:
 		var pivot = vehicle.global_transform.origin
 		var offset = Vector3(0, 0, camera_settings.camera_distance)
-		var basis = Basis(Vector3.UP, camera_yaw) * Basis(Vector3.RIGHT, camera_pitch)
-		offset = basis * offset
+		var cam_basis = Basis(Vector3.UP, camera_yaw) * Basis(Vector3.RIGHT, camera_pitch)
+		offset = cam_basis * offset
 		var target = pivot + offset + Vector3(0, camera_settings.camera_height, 0)
 		var current = camera.global_transform.origin
 		camera.global_transform.origin = current.lerp(target, clamp(camera_settings.camera_smooth * delta, 0.0, 1.0))

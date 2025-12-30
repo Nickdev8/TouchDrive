@@ -69,16 +69,16 @@ shape = SubResource("5")
 [node name="Obstacles" type="Node3D" parent="."]
 
 [node name="Block" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 18.057373, 0.10738015, -31.516762)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 18.057373, -0.5570576, -31.516762)
 
 [node name="Block2" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.845246, 0.10738015, -28.74486)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.845246, -0.7679119, -28.74486)
 
 [node name="Block3" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 17.541924, 0.10738015, -28.427746)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 17.541924, -0.17438316, -28.427746)
 
 [node name="Block4" parent="Obstacles" instance=ExtResource("4_fos0i")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.294601, 0.10738015, -32.548443)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14.294601, -0.9171095, -32.548443)
 
 [node name="Block6" parent="Obstacles" instance=ExtResource("4_fos0i")]
 transform = Transform3D(-2.474308e-08, -8.384822e-08, 2, -1.9182236, 0.56605566, 0, -0.56605566, -1.9182236, -8.742278e-08, 2.1199837, -0.90781236, -89.17801)
@@ -139,6 +139,12 @@ transform = Transform3D(-7.28568e-08, -4.831802e-08, -1.9999999, -1.1053871, 1.6
 
 [node name="Block25" parent="Obstacles" instance=ExtResource("4_fos0i")]
 transform = Transform3D(-7.28568e-08, -4.831802e-08, -1.9999999, -1.1053871, 1.6667691, -2.6054018e-15, 1.6667693, 1.1053872, -8.742276e-08, 2.1199827, 6.7473326, -119.807495)
+
+[node name="Block5" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 20.696125, 0.36532402, -31.516762)
+
+[node name="Block26" parent="Obstacles" instance=ExtResource("4_fos0i")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 20.180676, 0.7479985, -28.427746)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("9")
