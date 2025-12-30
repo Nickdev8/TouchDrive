@@ -62,7 +62,7 @@ func _ready():
 	using_bridge = os_name == "Linux"
 	if using_bridge:
 		# Start the touchpad->joystick bridge so Godot can read joystick input
-		var script_path = ProjectSettings.globalize_path("res://touchpad_joy_bridge.py")
+		var script_path = _ensure_bridge_script("touchpad_joy_bridge.py")
 		config_path = ProjectSettings.globalize_path("user://touchpad_joy_config.json")
 		state_path = ProjectSettings.globalize_path("user://touchpad_joy_state.json")
 		_write_config()
@@ -107,6 +107,18 @@ func _start_bridge(script_path):
 		if pid > 0:
 			return pid
 	return OS.create_process("python3", args)
+
+func _ensure_bridge_script(filename):
+	var src_path = "res://%s" % filename
+	var dst_path = "user://%s" % filename
+	if not FileAccess.file_exists(dst_path):
+		var bytes = FileAccess.get_file_as_bytes(src_path)
+		if bytes.size() > 0:
+			var file = FileAccess.open(dst_path, FileAccess.WRITE)
+			if file:
+				file.store_buffer(bytes)
+				file.close()
+	return ProjectSettings.globalize_path(dst_path)
 
 func _physics_process(delta):
 	_check_respawn()
