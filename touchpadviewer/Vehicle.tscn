@@ -1,9 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://8wqo6lkf4dyr"]
+[gd_scene load_steps=8 format=3 uid="uid://8wqo6lkf4dyr"]
 
-[ext_resource type="Script" uid="uid://gcnqrn3jqppa" path="res://VehicleSettings.gd" id="1"]
-[ext_resource type="PackedScene" uid="uid://b7q0rpwvsrp3f" path="res://assets/source/models/Cars.fbx" id="2"]
-[ext_resource type="PackedScene" uid="uid://dd4eie0bwxpx" path="res://assets/source/models/Wheel.fbx" id="3"]
-[ext_resource type="PackedScene" uid="uid://cse357gitt8tv" path="res://assets/source/models/carwithinteriour.fbx" id="4_apl8m"]
+[ext_resource type="Script" uid="uid://c1j2wsthw8oe7" path="res://VehicleController.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://b7q0rpwvsrp3f" path="res://assets/models/Cars.fbx" id="2"]
+[ext_resource type="PackedScene" uid="uid://dd4eie0bwxpx" path="res://assets/models/Wheel.fbx" id="3"]
+[ext_resource type="PackedScene" uid="uid://cse357gitt8tv" path="res://assets/models/carwithinteriour.fbx" id="4_apl8m"]
+[ext_resource type="PackedScene" uid="uid://ct2yjs7mxhkku" path="res://assets/models/steeringwheel.fbx" id="5_steer"]
 
 [sub_resource type="BoxShape3D" id="1"]
 size = Vector3(3.59, 0.9272766, 5.6209555)
@@ -17,21 +18,172 @@ center_of_mass_mode = 1
 center_of_mass = Vector3(0, -0.35, 0)
 script = ExtResource("1")
 
+[node name="InteriorLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5611732, 0.18755084)
+light_energy = 1.5
+omni_range = 6.0
+
+[node name="HeadlightLeft" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.905, 2.14, -3.0931072)
+light_energy = 2.0
+spot_range = 20.0
+
+[node name="HeadlightLeft" type="SpotLight3D" parent="HeadlightLeft"]
+transform = Transform3D(1, 0, 0, 0, -1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, -0.045524836)
+light_energy = 2.0
+spot_range = 0.233
+spot_angle_attenuation = 0.03467407
+
+[node name="HeadlightRight2" type="SpotLight3D" parent="HeadlightLeft"]
+transform = Transform3D(1, 0, 0, 0, -0.9858677, -0.1675258, 0, 0.1675258, -0.9858677, -0.38541043, -0.04099989, 0.018671751)
+light_energy = 2.0
+spot_range = 0.22446015
+spot_angle = 23.967485
+spot_angle_attenuation = 0.03467407
+
+[node name="HeadlightRight3" type="SpotLight3D" parent="HeadlightLeft"]
+transform = Transform3D(1, 0, 0, 0, -0.9858677, -0.1675258, 0, 0.1675258, -0.9858677, -0.47341037, -0.04399991, 0.018671751)
+light_energy = 2.0
+spot_range = 0.22446015
+spot_angle = 23.967485
+spot_angle_attenuation = 0.03467407
+
+[node name="HeadlightRight4" type="SpotLight3D" parent="HeadlightLeft"]
+transform = Transform3D(1, 0, 0, 0, -0.9858677, -0.1675258, 0, 0.1675258, -0.9858677, -0.57441044, -0.046000004, 0.018671751)
+light_energy = 2.0
+spot_range = 0.22446015
+spot_angle = 23.967485
+spot_angle_attenuation = 0.03467407
+
+[node name="HeadlightRight" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.905, 2.14, -3.0931072)
+light_energy = 2.0
+spot_range = 20.0
+
+[node name="HeadlightRight" type="SpotLight3D" parent="HeadlightRight"]
+transform = Transform3D(1, 0, 0, 0, -1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, -0.045524836)
+light_energy = 2.0
+spot_range = 0.233
+spot_angle_attenuation = 0.03467407
+
+[node name="HeadlightRight2" type="SpotLight3D" parent="HeadlightRight"]
+transform = Transform3D(1, 0, 0, 0, -0.9858677, -0.1675258, 0, 0.1675258, -0.9858677, 0.32381284, -0.041234016, 0.018515587)
+light_energy = 2.0
+spot_range = 0.22446015
+spot_angle = 23.967485
+spot_angle_attenuation = 0.03467407
+
+[node name="HeadlightRight3" type="SpotLight3D" parent="HeadlightRight"]
+transform = Transform3D(1, 0, 0, 0, -0.9858677, -0.1675258, 0, 0.1675258, -0.9858677, 0.4119004, -0.04391408, 0.018515587)
+light_energy = 2.0
+spot_range = 0.22446015
+spot_angle = 23.967485
+spot_angle_attenuation = 0.03467407
+
+[node name="HeadlightRight4" type="SpotLight3D" parent="HeadlightRight"]
+transform = Transform3D(1, 0, 0, 0, -0.9858677, -0.1675258, 0, 0.1675258, -0.9858677, 0.51292205, -0.045956373, 0.018515587)
+light_energy = 2.0
+spot_range = 0.22446015
+spot_angle = 23.967485
+spot_angle_attenuation = 0.03467407
+
+[node name="BrakeLightRight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.053128, 2.091, 2.7615304)
+light_color = Color(1, 0.2, 0.2, 1)
+light_energy = 1.2
+omni_range = 0.19534473
+
+[node name="BrakeLightRight" type="OmniLight3D" parent="BrakeLightRight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3011197, 0, -0.014802694)
+light_color = Color(1, 0.2, 0.2, 1)
+light_energy = 1.2
+omni_range = 0.19534473
+
+[node name="BrakeLightLeft" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0085566, 2.091, 2.7615511)
+light_color = Color(1, 0.2, 0.2, 1)
+light_energy = 1.2
+omni_range = 0.19534473
+
+[node name="BrakeLightLeft" type="OmniLight3D" parent="BrakeLightLeft"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.301, 0, -0.0122179985)
+light_color = Color(1, 0.2, 0.2, 1)
+light_energy = 1.2
+omni_range = 0.19534473
+
+[node name="RoofLight1" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.08, 3.972, -0.26308513)
+light_energy = 2.5
+spot_range = 25.0
+spot_angle = 35.0
+
+[node name="RoofLight1" type="SpotLight3D" parent="RoofLight1"]
+transform = Transform3D(1, 0, 0, 0, -1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, -0.45188951)
+light_energy = 2.5
+spot_range = 1.14
+spot_angle = 20.15
+spot_angle_attenuation = 0.060371052
+
+[node name="RoofLight2" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.371, 3.972, -0.26308513)
+light_energy = 2.5
+spot_range = 25.0
+spot_angle = 35.0
+
+[node name="RoofLight2" type="SpotLight3D" parent="RoofLight2"]
+transform = Transform3D(1, 0, 0, 0, -1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, -0.45188951)
+light_energy = 2.5
+spot_range = 1.14
+spot_angle = 20.15
+spot_angle_attenuation = 0.060371052
+
+[node name="RoofLight3" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.371, 3.972, -0.26308513)
+light_energy = 2.5
+spot_range = 25.0
+spot_angle = 35.0
+
+[node name="RoofLight3" type="SpotLight3D" parent="RoofLight3"]
+transform = Transform3D(1, 0, 0, 0, -1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, -0.45188951)
+light_energy = 2.5
+spot_range = 1.14
+spot_angle = 20.15
+spot_angle_attenuation = 0.060371052
+
+[node name="RoofLight4" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.08, 3.972, -0.26308513)
+light_energy = 2.5
+spot_range = 25.0
+spot_angle = 35.0
+
+[node name="RoofLight4" type="SpotLight3D" parent="RoofLight4"]
+transform = Transform3D(1, 0, 0, 0, -1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, -0.45188951)
+light_energy = 2.5
+spot_range = 1.14
+spot_angle = 20.15
+spot_angle_attenuation = 0.060371052
+
 [node name="ChassisModel" parent="." instance=ExtResource("2")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00021648407, 2.3841858e-07, 0.016562939)
+
+[node name="carwithinteriour" parent="ChassisModel" instance=ExtResource("4_apl8m")]
+
+[node name="SteeringWheel" parent="." instance=ExtResource("5_steer")]
+transform = Transform3D(1, 0, 0, 0, 0.45377278, -0.89111745, 0, 0.89111745, 0.45377278, 0, 2.436506, -0.73211926)
 
 [node name="ChassisCollision" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8661404, -0.10297394)
+visible = false
 shape = SubResource("1")
 
 [node name="ChassisCollision2" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8661222, 0.3064326)
+visible = false
 shape = SubResource("BoxShape3D_hdsag")
 
 [node name="FrontLeft" type="VehicleWheel3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -2, 0.5, -2.4)
 use_as_steering = true
-wheel_radius = 0.45
+wheel_radius = 0.945
 wheel_friction_slip = 1.1
 suspension_travel = 0.25
 suspension_stiffness = 55.0
@@ -45,7 +197,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 [node name="FrontRight" type="VehicleWheel3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.5, -2.4)
 use_as_steering = true
-wheel_radius = 0.45
+wheel_radius = 0.945
 wheel_friction_slip = 1.1
 suspension_travel = 0.25
 suspension_stiffness = 55.0
@@ -59,7 +211,7 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 [node name="RearLeft" type="VehicleWheel3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -2, 0.5, 1.5)
 use_as_traction = true
-wheel_radius = 0.45
+wheel_radius = 0.945
 wheel_friction_slip = 1.1
 suspension_travel = 0.25
 suspension_stiffness = 55.0
@@ -73,7 +225,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 [node name="RearRight" type="VehicleWheel3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.5, 1.5)
 use_as_traction = true
-wheel_radius = 0.45
+wheel_radius = 0.945
 wheel_friction_slip = 1.1
 suspension_travel = 0.25
 suspension_stiffness = 55.0
@@ -83,5 +235,3 @@ damping_relaxation = 8.0
 
 [node name="RearRightMesh" parent="RearRight" instance=ExtResource("3")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
-
-[node name="carwithinteriour" parent="." instance=ExtResource("4_apl8m")]
