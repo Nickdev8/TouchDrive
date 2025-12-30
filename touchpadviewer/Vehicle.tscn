@@ -187,12 +187,12 @@ shape = SubResource("BoxShape3D_hdsag")
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -2, 0.5, -2.4)
 use_as_steering = true
 wheel_radius = 0.945
-wheel_friction_slip = 1.1
-suspension_travel = 0.25
-suspension_stiffness = 55.0
-suspension_max_force = 12000.0
-damping_compression = 6.0
-damping_relaxation = 8.0
+wheel_friction_slip = 1.6
+suspension_travel = 0.18
+suspension_stiffness = 95.0
+suspension_max_force = 20000.0
+damping_compression = 9.0
+damping_relaxation = 12.0
 
 [node name="FrontLeftMesh" parent="FrontLeft" instance=ExtResource("3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
@@ -201,12 +201,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.5, -2.4)
 use_as_steering = true
 wheel_radius = 0.945
-wheel_friction_slip = 1.1
-suspension_travel = 0.25
-suspension_stiffness = 55.0
-suspension_max_force = 12000.0
-damping_compression = 6.0
-damping_relaxation = 8.0
+wheel_friction_slip = 1.6
+suspension_travel = 0.18
+suspension_stiffness = 95.0
+suspension_max_force = 20000.0
+damping_compression = 9.0
+damping_relaxation = 12.0
 
 [node name="FrontRightMesh" parent="FrontRight" instance=ExtResource("3")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
@@ -215,12 +215,12 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -2, 0.5, 1.5)
 use_as_traction = true
 wheel_radius = 0.945
-wheel_friction_slip = 1.1
-suspension_travel = 0.25
-suspension_stiffness = 55.0
-suspension_max_force = 12000.0
-damping_compression = 6.0
-damping_relaxation = 8.0
+wheel_friction_slip = 1.6
+suspension_travel = 0.18
+suspension_stiffness = 95.0
+suspension_max_force = 20000.0
+damping_compression = 9.0
+damping_relaxation = 12.0
 
 [node name="RearLeftMesh" parent="RearLeft" instance=ExtResource("3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
@@ -229,12 +229,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.5, 1.5)
 use_as_traction = true
 wheel_radius = 0.945
-wheel_friction_slip = 1.1
-suspension_travel = 0.25
-suspension_stiffness = 55.0
-suspension_max_force = 12000.0
-damping_compression = 6.0
-damping_relaxation = 8.0
+wheel_friction_slip = 1.6
+suspension_travel = 0.18
+suspension_stiffness = 95.0
+suspension_max_force = 20000.0
+damping_compression = 9.0
+damping_relaxation = 12.0
 
 [node name="RearRightMesh" parent="RearRight" instance=ExtResource("3")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

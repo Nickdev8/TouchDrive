@@ -7,6 +7,7 @@ import platform
 import stat
 import sys
 import time
+import subprocess
 from evdev import AbsInfo, InputDevice, UInput, ecodes, list_devices
 
 # Touchpad MT -> virtual joystick bridge (single-finger steering on X axis).
@@ -85,6 +86,20 @@ def main():
 				problems.append(f"no read access to {dev_path}")
 		return problems
 
+	def _attempt_fix_permissions(dev_path):
+		commands = []
+		if not os.path.exists("/dev/uinput"):
+			commands.append(["sudo", "modprobe", "uinput"])
+		if dev_path:
+			commands.append(["sudo", "chmod", "a+r", dev_path])
+		commands.append(["sudo", "chmod", "a+rw", "/dev/uinput"])
+		for cmd in commands:
+			try:
+				subprocess.run(cmd, check=True)
+			except subprocess.CalledProcessError:
+				return False
+		return True
+
 	def _print_permission_help(dev_path, problems):
 		print("Permission issue detected:", file=sys.stderr)
 		for p in problems:
@@ -119,7 +134,23 @@ def main():
 	problems = _check_permissions(dev.path if dev else None)
 	if problems:
 		_print_permission_help(dev.path if dev else None, problems)
-		return 2
+		if sys.stdin.isatty() and sys.stdout.isatty():
+			answer = input("Attempt a temporary fix with sudo now? [y/N] ").strip().lower()
+			if answer in ("y", "yes"):
+				if _attempt_fix_permissions(dev.path if dev else None):
+					problems = _check_permissions(dev.path if dev else None)
+					if not problems:
+						print("Permissions fixed for this session.", file=sys.stderr)
+					else:
+						_print_permission_help(dev.path if dev else None, problems)
+						return 2
+				else:
+					print("Failed to apply permissions via sudo.", file=sys.stderr)
+					return 2
+			else:
+				return 2
+		else:
+			return 2
 
 	# Grab the device so the desktop cursor does not move.
 	try:
