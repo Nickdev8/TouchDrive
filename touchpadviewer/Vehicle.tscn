@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://8wqo6lkf4dyr"]
+[gd_scene load_steps=7 format=3 uid="uid://8wqo6lkf4dyr"]
 
 [ext_resource type="Script" uid="uid://gcnqrn3jqppa" path="res://VehicleSettings.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://b7q0rpwvsrp3f" path="res://assets/source/models/Cars.fbx" id="2"]
 [ext_resource type="PackedScene" uid="uid://dd4eie0bwxpx" path="res://assets/source/models/Wheel.fbx" id="3"]
+[ext_resource type="PackedScene" uid="uid://cse357gitt8tv" path="res://assets/source/models/carwithinteriour.fbx" id="4_apl8m"]
 
 [sub_resource type="BoxShape3D" id="1"]
 size = Vector3(3.59, 0.9272766, 5.6209555)
@@ -39,8 +40,7 @@ damping_compression = 6.0
 damping_relaxation = 8.0
 
 [node name="FrontLeftMesh" parent="FrontLeft" instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-scale = Vector3(1, 1, -1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 
 [node name="FrontRight" type="VehicleWheel3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.5, -2.4)
@@ -54,8 +54,7 @@ damping_compression = 6.0
 damping_relaxation = 8.0
 
 [node name="FrontRightMesh" parent="FrontRight" instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-scale = Vector3(-1, 1, -1)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 
 [node name="RearLeft" type="VehicleWheel3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -2, 0.5, 1.5)
@@ -69,8 +68,7 @@ damping_compression = 6.0
 damping_relaxation = 8.0
 
 [node name="RearLeftMesh" parent="RearLeft" instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-scale = Vector3(1, 1, -1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
 
 [node name="RearRight" type="VehicleWheel3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2, 0.5, 1.5)
@@ -84,5 +82,6 @@ damping_compression = 6.0
 damping_relaxation = 8.0
 
 [node name="RearRightMesh" parent="RearRight" instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-scale = Vector3(-1, 1, -1)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="carwithinteriour" parent="." instance=ExtResource("4_apl8m")]
