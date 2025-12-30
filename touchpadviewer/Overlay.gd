@@ -12,6 +12,7 @@ var right_two_fingers := false
 var left_f1 := Vector2.ZERO
 var left_touch_active := false
 var speed_kmh := 0.0
+var notice := ""
 
 var font: Font
 
@@ -32,10 +33,13 @@ func _draw():
 	draw_arc(center, radius, 0.0, TAU, 64, rim_color, 10.0)
 	draw_arc(center, radius - 10.0, 0.0, TAU, 64, wheel_color, 8.0)
 	draw_circle(center, 10.0, rim_color)
-	for i in range(3):
-		var angle = steer_angle + TAU * (float(i) / 3.0)
-		var spoke_end = center + Vector2.RIGHT.rotated(angle) * (radius - 14.0)
-		draw_line(center, spoke_end, wheel_color, 6.0)
+	var t_angle = steer_angle * 5.0 + (PI * 1.5)
+	var t_up = Vector2.RIGHT.rotated(t_angle)
+	var t_right = t_up.rotated(PI / 2.0)
+	var t_top = center + t_up * (radius - 14.0)
+	var t_bottom = center - t_up * (radius * 0.3)
+	draw_line(t_bottom, t_top, wheel_color, 6.0)
+	draw_line(t_top - t_right * (radius * 0.55), t_top + t_right * (radius * 0.55), wheel_color, 6.0)
 	if left_touch_active:
 		var wheel_rect = Rect2(center - Vector2(radius, radius), Vector2(radius, radius) * 2.0)
 		var wheel_dot = _map_finger(left_f1, wheel_rect)
@@ -49,6 +53,8 @@ func _draw():
 	draw_string(font, center + Vector2(-60, radius + 40), "gear: " + gear_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gear_color)
 	draw_string(font, center + Vector2(-60, radius + 60), "speed: " + str(snapped(speed_kmh, 0.1)) + " km/h", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
 	draw_string(font, center + Vector2(-60, radius + 80), "pads: " + str(pads), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
+	if notice != "":
+		draw_string(font, Vector2(20, 30), notice, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.9, 0.4))
 
 	# Joystick vector display (steer/throttle)
 	var vec_origin = center + Vector2(120, -40)

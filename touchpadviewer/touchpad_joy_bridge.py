@@ -2,6 +2,9 @@
 import argparse
 import json
 import math
+import os
+import platform
+import stat
 import sys
 import time
 from evdev import AbsInfo, InputDevice, UInput, ecodes, list_devices
@@ -52,6 +55,15 @@ def scale_to_axis(value, in_min, in_max, out_min=-32768, out_max=32767):
 
 
 def main():
+	print(
+		"touchpad_joy_bridge: starting (debug banner)\n"
+		"  platform: {}\n"
+		"  note: Linux evdev/uinput backend only; Windows support is pending.\n".format(
+			platform.system()
+		),
+		file=sys.stderr,
+	)
+
 	parser = argparse.ArgumentParser(description="Touchpad MT -> virtual joystick (steering)")
 	parser.add_argument("device", nargs="?", help="/dev/input/eventX for the touchpad")
 	parser.add_argument("--auto", action="store_true", help="auto-detect a touchpad device")
@@ -59,6 +71,38 @@ def main():
 	parser.add_argument("--config", help="path to JSON config file")
 	parser.add_argument("--state", help="path to write JSON state for HUD")
 	args = parser.parse_args()
+
+	def _check_permissions(dev_path):
+		problems = []
+		if os.path.exists("/dev/uinput"):
+			if not os.access("/dev/uinput", os.W_OK):
+				problems.append("no write access to /dev/uinput")
+		else:
+			problems.append("/dev/uinput missing (load with: sudo modprobe uinput)")
+
+		if dev_path and os.path.exists(dev_path):
+			if not os.access(dev_path, os.R_OK):
+				problems.append(f"no read access to {dev_path}")
+		return problems
+
+	def _print_permission_help(dev_path, problems):
+		print("Permission issue detected:", file=sys.stderr)
+		for p in problems:
+			print(f"  - {p}", file=sys.stderr)
+		print("Fix options (pick one):", file=sys.stderr)
+		print("  1) Add user to input group and relogin:", file=sys.stderr)
+		print("     sudo usermod -aG input $USER", file=sys.stderr)
+		print("  2) Temporarily allow access (current session):", file=sys.stderr)
+		if dev_path:
+			print(f"     sudo chmod a+r {dev_path}", file=sys.stderr)
+		print("     sudo chmod a+rw /dev/uinput", file=sys.stderr)
+		print("  3) Permanent udev rule (recommended):", file=sys.stderr)
+		print("     sudo tee /etc/udev/rules.d/99-touchpad-joy.rules <<'EOF'", file=sys.stderr)
+		print("     KERNEL==\"uinput\", MODE=\"0660\", GROUP=\"input\"", file=sys.stderr)
+		if dev_path:
+			print("     SUBSYSTEM==\"input\", KERNEL==\"event*\", MODE=\"0660\", GROUP=\"input\"", file=sys.stderr)
+		print("     EOF", file=sys.stderr)
+		print("     sudo udevadm control --reload-rules && sudo udevadm trigger", file=sys.stderr)
 
 	dev = None
 	if args.device:
@@ -71,6 +115,11 @@ def main():
 			print("No multitouch touchpad device found.", file=sys.stderr)
 			return 1
 		print(f"Using device: {dev.path} ({dev.name})")
+
+	problems = _check_permissions(dev.path if dev else None)
+	if problems:
+		_print_permission_help(dev.path if dev else None, problems)
+		return 2
 
 	# Grab the device so the desktop cursor does not move.
 	try:

@@ -53,15 +53,24 @@ var brake_pressed := false
 
 var steering_wheel
 var steering_wheel_basis
+var using_bridge := false
+var fallback_notice := ""
+var _fallback_view_size := Vector2.ZERO
 
 func _ready():
-	# Start the touchpad->joystick bridge so Godot can read joystick input
-	var script_path = ProjectSettings.globalize_path("res://touchpad_joy_bridge.py")
-	config_path = ProjectSettings.globalize_path("user://touchpad_joy_config.json")
-	state_path = ProjectSettings.globalize_path("user://touchpad_joy_state.json")
-	_write_config()
-	bridge_pid = _start_bridge(script_path)
-	tree_exiting.connect(_on_tree_exiting)
+	var os_name = OS.get_name()
+	using_bridge = os_name == "Linux"
+	if using_bridge:
+		# Start the touchpad->joystick bridge so Godot can read joystick input
+		var script_path = ProjectSettings.globalize_path("res://touchpad_joy_bridge.py")
+		config_path = ProjectSettings.globalize_path("user://touchpad_joy_config.json")
+		state_path = ProjectSettings.globalize_path("user://touchpad_joy_state.json")
+		_write_config()
+		bridge_pid = _start_bridge(script_path)
+		tree_exiting.connect(_on_tree_exiting)
+	else:
+		fallback_notice = "Touchpad bridge unsupported on %s. Using mouse fallback: LMB steer (left half), RMB gear (right half), wheel throttle (right half), MMB/Space brake." % os_name
+	set_process_input(true)
 	_cache_wheel_nodes()
 	_cache_steering_wheel()
 	respawn_position = global_transform.origin
@@ -101,13 +110,18 @@ func _start_bridge(script_path):
 
 func _physics_process(delta):
 	_check_respawn()
-	_read_bridge_state()
+	if using_bridge:
+		_read_bridge_state()
 	_update_input()
 	_apply_vehicle(delta)
 	_update_steering_wheel()
-	_write_config()
+	if using_bridge:
+		_write_config()
 
 func _update_input():
+	if not using_bridge:
+		_read_fallback_input()
+		return
 	var pads = Input.get_connected_joypads()
 	if pads.size() == 0:
 		_reset_input_state()
@@ -263,6 +277,48 @@ func _read_touchpad_input(pad):
 		_axis_to_signed(Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT))
 	)
 
+func _read_fallback_input():
+	var viewport = get_viewport()
+	if not viewport:
+		return
+	_fallback_view_size = viewport.get_visible_rect().size
+	var mouse_pos = viewport.get_mouse_position()
+	var half_x = _fallback_view_size.x * 0.5
+	var left_half = mouse_pos.x < half_x
+	var right_half = mouse_pos.x >= half_x
+	var left_pressed = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	var right_pressed = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+
+	left_touch_active = left_pressed and left_half
+	right_touch_active = right_pressed and right_half
+	left_finger_active = left_touch_active
+	right_two_fingers = false
+
+	brake_pressed = Input.is_key_pressed(KEY_SPACE) or Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE)
+
+	if left_touch_active:
+		var u = clamp(mouse_pos.x / half_x, 0.0, 1.0)
+		var v = clamp(mouse_pos.y / _fallback_view_size.y, 0.0, 1.0)
+		left_f1 = Vector2(u * 2.0 - 1.0, v * 2.0 - 1.0)
+		steer = clamp((mouse_pos.x - half_x * 0.5) / max(1.0, half_x * 0.5), -1.0, 1.0)
+	else:
+		left_f1 = Vector2.ZERO
+		steer = 0.0
+
+	if right_half:
+		var ru = clamp((mouse_pos.x - half_x) / half_x, 0.0, 1.0)
+		var rv = clamp(mouse_pos.y / _fallback_view_size.y, 0.0, 1.0)
+		right_f1 = Vector2(ru * 2.0 - 1.0, rv * 2.0 - 1.0)
+	else:
+		right_f1 = Vector2.ZERO
+
+	if right_touch_active:
+		var col = 0 if mouse_pos.x < (half_x + half_x * 0.5) else 1
+		var row = 0 if mouse_pos.y < (_fallback_view_size.y * 0.5) else 1
+		if col == 1:
+			row = 1 - row
+		gear = col * 2 + row + 1
+
 func _read_gear(pad_id):
 	if Input.is_joy_button_pressed(pad_id, JOY_BUTTON_A):
 		return 1
@@ -319,6 +375,20 @@ func _reset_input_state():
 	left_touch_active = false
 	right_touch_active = false
 	brake_pressed = false
+
+func _input(event):
+	if using_bridge:
+		return
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			var viewport = get_viewport()
+			if not viewport:
+				return
+			var view = viewport.get_visible_rect().size
+			if event.position.x < view.x * 0.5:
+				return
+			var delta = 0.08 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -0.08
+			throttle = clamp(throttle + delta, -1.0, 1.0)
 
 func _write_config():
 	var cfg = {

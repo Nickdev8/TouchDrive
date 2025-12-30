@@ -23,6 +23,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5611732, 0.18755084)
 light_energy = 1.5
 omni_range = 6.0
 
+[node name="InteriorCameraAnchor" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1920929e-07, 2.9257758, -0.38107282)
+
 [node name="HeadlightLeft" type="SpotLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.905, 2.14, -3.0931072)
 light_energy = 2.0
@@ -168,7 +171,7 @@ spot_angle_attenuation = 0.060371052
 [node name="carwithinteriour" parent="ChassisModel" instance=ExtResource("4_apl8m")]
 
 [node name="SteeringWheel" parent="." instance=ExtResource("5_steer")]
-transform = Transform3D(1, 0, 0, 0, 0.45377278, -0.89111745, 0, 0.89111745, 0.45377278, 0, 2.436506, -0.73211926)
+transform = Transform3D(0.7, 0, 0, 0, 0.31764093, -0.6237822, 0, 0.6237822, 0.31764093, 0, 2.1774752, -0.73211926)
 
 [node name="ChassisCollision" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8661404, -0.10297394)

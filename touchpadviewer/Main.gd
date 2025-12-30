@@ -7,27 +7,60 @@ extends Node3D
 
 var camera_yaw := 0.0
 var camera_pitch := -0.4
+var _camera_first_person := true
+var _c_prev := false
+
+@export var first_person_offset := Vector3(0, 1.2, 0.4)
+@export var first_person_anchor_path := NodePath("Vehicle/InteriorCameraAnchor")
+@export var first_person_look_yaw_scale := 0.35
+@export var first_person_look_max_yaw := 0.35
+@export var first_person_lateral_offset := 0.2
+var _first_person_anchor
 
 func _ready():
 	if not vehicle:
 		push_warning("Vehicle node missing in Main scene.")
+	_first_person_anchor = get_node_or_null(first_person_anchor_path)
 
 func _physics_process(delta):
-	_update_camera_orbit(delta)
+	_handle_camera_toggle()
+	if not _camera_first_person:
+		_update_camera_orbit(delta)
 	_update_camera(delta)
 	_update_overlay()
 
 func _update_camera(delta):
 	if not vehicle:
 		return
-	var pivot = vehicle.global_transform.origin
-	var offset = Vector3(0, 0, camera_settings.camera_distance)
-	var basis = Basis(Vector3.UP, camera_yaw) * Basis(Vector3.RIGHT, camera_pitch)
-	offset = basis * offset
-	var target = pivot + offset + Vector3(0, camera_settings.camera_height, 0)
-	var current = camera.global_transform.origin
-	camera.global_transform.origin = current.lerp(target, clamp(camera_settings.camera_smooth * delta, 0.0, 1.0))
-	camera.look_at(pivot, Vector3.UP)
+	if _camera_first_person:
+		if _first_person_anchor:
+			var t = camera.global_transform
+			var steer_input = 0.0
+			if vehicle and "steer_angle" in vehicle and "max_steer" in vehicle:
+				if abs(vehicle.max_steer) > 0.0001:
+					steer_input = clamp(vehicle.steer_angle / vehicle.max_steer, -1.0, 1.0)
+			var yaw = clamp(-steer_input * first_person_look_yaw_scale, -first_person_look_max_yaw, first_person_look_max_yaw)
+			var local_basis = _first_person_anchor.global_transform.basis * Basis(Vector3.UP, yaw)
+			var lateral = local_basis.x * (steer_input * first_person_lateral_offset)
+			t.origin = _first_person_anchor.global_transform.origin + lateral
+			t.basis = local_basis
+			camera.global_transform = t
+		else:
+			var base = vehicle.global_transform
+			var target_pos = base.origin + base.basis * first_person_offset
+			var t = camera.global_transform
+			t.origin = target_pos
+			t.basis = base.basis
+			camera.global_transform = t
+	else:
+		var pivot = vehicle.global_transform.origin
+		var offset = Vector3(0, 0, camera_settings.camera_distance)
+		var basis = Basis(Vector3.UP, camera_yaw) * Basis(Vector3.RIGHT, camera_pitch)
+		offset = basis * offset
+		var target = pivot + offset + Vector3(0, camera_settings.camera_height, 0)
+		var current = camera.global_transform.origin
+		camera.global_transform.origin = current.lerp(target, clamp(camera_settings.camera_smooth * delta, 0.0, 1.0))
+		camera.look_at(pivot, Vector3.UP)
 
 func _update_camera_orbit(delta):
 	var yaw_input = 0.0
@@ -44,6 +77,12 @@ func _update_camera_orbit(delta):
 	camera_pitch += pitch_input * camera_settings.camera_pitch_speed * delta
 	camera_pitch = clamp(camera_pitch, camera_settings.camera_pitch_min, camera_settings.camera_pitch_max)
 
+func _handle_camera_toggle():
+	var c_pressed = Input.is_key_pressed(KEY_C)
+	if c_pressed and not _c_prev:
+		_camera_first_person = not _camera_first_person
+	_c_prev = c_pressed
+
 func _update_overlay():
 	if not overlay or not vehicle:
 		return
@@ -59,4 +98,5 @@ func _update_overlay():
 	overlay.left_f1 = vehicle.left_f1
 	overlay.left_touch_active = vehicle.left_finger_active
 	overlay.speed_kmh = vehicle.linear_velocity.length() * 3.6
+	overlay.notice = vehicle.fallback_notice
 	overlay.queue_redraw()
