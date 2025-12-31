@@ -199,7 +199,7 @@ node_a = NodePath("../../../..")
 node_b = NodePath("../FrontLeftSteer")
 
 [node name="WheelFrontLeftJoint" type="HingeJoint3D" parent="WheelRig/Anchors/WheelFrontLeftAnchor"]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 node_a = NodePath("../FrontLeftSteer")
 node_b = NodePath("../WheelFrontLeft")
 
@@ -235,7 +235,7 @@ node_a = NodePath("../../../..")
 node_b = NodePath("../FrontRightSteer")
 
 [node name="WheelFrontRightJoint" type="HingeJoint3D" parent="WheelRig/Anchors/WheelFrontRightAnchor"]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 node_a = NodePath("../FrontRightSteer")
 node_b = NodePath("../WheelFrontRight")
 
@@ -255,9 +255,24 @@ shape = SubResource("WheelShape")
 [node name="WheelRearLeftAnchor" type="Node3D" parent="WheelRig/Anchors"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.6, 2.1)
 
-[node name="WheelRearLeftJoint" type="HingeJoint3D" parent="WheelRig/Anchors/WheelRearLeftAnchor"]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+[node name="RearLeftSteer" type="RigidBody3D" parent="WheelRig/Anchors/WheelRearLeftAnchor"]
+collision_layer = 0
+collision_mask = 0
+mass = 5.0
+linear_damp = 6.0
+angular_damp = 6.0
+
+[node name="Collision" type="CollisionShape3D" parent="WheelRig/Anchors/WheelRearLeftAnchor/RearLeftSteer"]
+shape = SubResource("SteerShape")
+
+[node name="RearLeftSteerJoint" type="HingeJoint3D" parent="WheelRig/Anchors/WheelRearLeftAnchor"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0)
 node_a = NodePath("../../../..")
+node_b = NodePath("../RearLeftSteer")
+
+[node name="WheelRearLeftJoint" type="HingeJoint3D" parent="WheelRig/Anchors/WheelRearLeftAnchor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+node_a = NodePath("../RearLeftSteer")
 node_b = NodePath("../WheelRearLeft")
 
 [node name="WheelRearLeft" type="RigidBody3D" parent="WheelRig/Anchors/WheelRearLeftAnchor"]
@@ -276,9 +291,24 @@ shape = SubResource("WheelShape")
 [node name="WheelRearRightAnchor" type="Node3D" parent="WheelRig/Anchors"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.6, 2.1)
 
-[node name="WheelRearRightJoint" type="HingeJoint3D" parent="WheelRig/Anchors/WheelRearRightAnchor"]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+[node name="RearRightSteer" type="RigidBody3D" parent="WheelRig/Anchors/WheelRearRightAnchor"]
+collision_layer = 0
+collision_mask = 0
+mass = 5.0
+linear_damp = 6.0
+angular_damp = 6.0
+
+[node name="Collision" type="CollisionShape3D" parent="WheelRig/Anchors/WheelRearRightAnchor/RearRightSteer"]
+shape = SubResource("SteerShape")
+
+[node name="RearRightSteerJoint" type="HingeJoint3D" parent="WheelRig/Anchors/WheelRearRightAnchor"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0)
 node_a = NodePath("../../../..")
+node_b = NodePath("../RearRightSteer")
+
+[node name="WheelRearRightJoint" type="HingeJoint3D" parent="WheelRig/Anchors/WheelRearRightAnchor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+node_a = NodePath("../RearRightSteer")
 node_b = NodePath("../WheelRearRight")
 
 [node name="WheelRearRight" type="RigidBody3D" parent="WheelRig/Anchors/WheelRearRightAnchor"]

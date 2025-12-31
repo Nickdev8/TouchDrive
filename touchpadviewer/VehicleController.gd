@@ -16,6 +16,7 @@ const WHEEL_DEFS := [
 		"steer_joint_path": "WheelRig/Anchors/WheelFrontLeftAnchor/FrontLeftSteerJoint",
 		"drive": true,
 		"steer": true,
+		"rear": false,
 	},
 	{
 		"name": "FrontRight",
@@ -25,24 +26,27 @@ const WHEEL_DEFS := [
 		"steer_joint_path": "WheelRig/Anchors/WheelFrontRightAnchor/FrontRightSteerJoint",
 		"drive": true,
 		"steer": true,
+		"rear": false,
 	},
 	{
 		"name": "RearLeft",
 		"anchor_path": "WheelRig/Anchors/WheelRearLeftAnchor",
 		"wheel_path": "WheelRig/Anchors/WheelRearLeftAnchor/WheelRearLeft",
-		"steer_body_path": "",
-		"steer_joint_path": "",
+		"steer_body_path": "WheelRig/Anchors/WheelRearLeftAnchor/RearLeftSteer",
+		"steer_joint_path": "WheelRig/Anchors/WheelRearLeftAnchor/RearLeftSteerJoint",
 		"drive": true,
-		"steer": false,
+		"steer": true,
+		"rear": true,
 	},
 	{
 		"name": "RearRight",
 		"anchor_path": "WheelRig/Anchors/WheelRearRightAnchor",
 		"wheel_path": "WheelRig/Anchors/WheelRearRightAnchor/WheelRearRight",
-		"steer_body_path": "",
-		"steer_joint_path": "",
+		"steer_body_path": "WheelRig/Anchors/WheelRearRightAnchor/RearRightSteer",
+		"steer_joint_path": "WheelRig/Anchors/WheelRearRightAnchor/RearRightSteerJoint",
 		"drive": true,
-		"steer": false,
+		"steer": true,
+		"rear": true,
 	},
 ]
 
@@ -55,6 +59,7 @@ class WheelData:
 	var steer_joint: HingeJoint3D
 	var drive := false
 	var steer := false
+	var rear := false
 
 # Bridge process id
 var bridge_pid := -1
@@ -126,6 +131,7 @@ func _ready():
 	set_process_input(true)
 	_cache_wheels()
 	_configure_wheels()
+	_place_wheels_at_anchors()
 	_cache_steering_wheel()
 	respawn_position = global_transform.origin
 	respawn_rotation = rotation
@@ -200,6 +206,7 @@ func _build_wheel(entry):
 	wheel.wheel = get_node_or_null(entry["wheel_path"])
 	wheel.drive = entry["drive"]
 	wheel.steer = entry["steer"]
+	wheel.rear = entry.get("rear", false)
 	if entry["steer_body_path"] != "":
 		wheel.steer_body = get_node_or_null(entry["steer_body_path"])
 	if entry["steer_joint_path"] != "":
@@ -218,6 +225,7 @@ func _configure_wheels():
 	material.bounce = 0.0
 	for wheel in _wheels:
 		var body = wheel.wheel
+		body.top_level = true
 		body.mass = wheel_mass
 		body.linear_damp = wheel_linear_damp
 		body.angular_damp = wheel_angular_damp
@@ -230,6 +238,7 @@ func _configure_wheels():
 			collision.shape.height = wheel_width
 			collision.rotation = Vector3(0.0, 0.0, PI / 2.0)
 		if wheel.steer_body:
+			wheel.steer_body.top_level = true
 			wheel.steer_body.mass = 5.0
 			wheel.steer_body.linear_damp = 6.0
 			wheel.steer_body.angular_damp = 6.0
@@ -237,9 +246,15 @@ func _configure_wheels():
 			wheel.steer_body.collision_layer = 0
 			wheel.steer_body.collision_mask = 0
 			wheel.steer_body.add_collision_exception_with(self)
-		if wheel.steer_joint:
-			# Limits are left to the steering torque controller to avoid version-specific hinge properties.
-			pass
+
+func _place_wheels_at_anchors():
+	for wheel in _wheels:
+		if not wheel.anchor:
+			continue
+		if wheel.steer_body:
+			wheel.steer_body.global_transform = wheel.anchor.global_transform
+		if wheel.wheel:
+			wheel.wheel.global_transform = wheel.anchor.global_transform
 
 func _apply_vehicle(delta):
 	if auto_center_steer and abs(steer) < 0.01 and not left_touch_active:
@@ -281,6 +296,9 @@ func _get_drive_torque():
 		var max_speed = GEAR_MAX_SPEED_KMH.get(gear, 80.0)
 		var limit = clamp(1.0 - (speed_kmh / max_speed), 0.0, 1.0)
 		drive_torque *= limit
+		if speed_kmh <= self.crawl_speed_kmh:
+			var t = 1.0 - clamp(speed_kmh / max(self.crawl_speed_kmh, 0.1), 0.0, 1.0)
+			drive_torque *= lerp(1.0, self.crawl_torque_multiplier, t)
 	elif gear < 0:
 		drive_torque = -reverse_force * abs(throttle)
 	return drive_torque
@@ -292,7 +310,10 @@ func _update_steering_bodies():
 		var steer_axis = global_transform.basis.y
 		var rel = global_transform.basis.inverse() * wheel.steer_body.global_transform.basis
 		var current = rel.get_euler().y
-		var error = -steer_angle - current
+		var target = -steer_angle
+		if wheel.rear:
+			target = target * self.rear_steer_ratio
+		var error = target - current
 		var ang_vel = wheel.steer_body.angular_velocity.dot(steer_axis)
 		var torque = steer_axis * clamp(error * steer_torque - ang_vel * steer_damping, -steer_torque_limit, steer_torque_limit)
 		wheel.steer_body.apply_torque(torque)
@@ -323,35 +344,18 @@ func _align_wheel_axis(wheel):
 	var damping = ang_vel - desired_axis * ang_vel.dot(desired_axis)
 	var torque = axis_error * wheel_axis_align_torque - damping * wheel_axis_align_damping
 	wheel.wheel.apply_torque(torque)
+	var desired_up = reference.global_transform.basis.y
+	var current_up = wheel.wheel.global_transform.basis.y
+	var up_error = current_up.cross(desired_up)
+	var up_ang_vel = ang_vel - desired_up * ang_vel.dot(desired_up)
+	var up_torque = up_error * wheel_upright_torque - up_ang_vel * wheel_upright_damping
+	wheel.wheel.apply_torque(up_torque)
 
 func _stabilize_wheel_anchor(wheel):
-	if not wheel.wheel or not wheel.anchor:
-		return
-	var target = wheel.anchor.global_transform.origin
-	var current = wheel.wheel.global_transform.origin
-	var error = current - target
-	var rel_vel = wheel.wheel.linear_velocity - linear_velocity
-	var force = -error * wheel_anchor_spring - rel_vel * wheel_anchor_damping
-	if force.length() > wheel_anchor_force_limit:
-		force = force.normalized() * wheel_anchor_force_limit
-	wheel.wheel.apply_central_force(force)
-	apply_central_force(-force)
+	return
 
 func _apply_grip_forces(wheel):
-	if not wheel.wheel or not wheel.anchor:
-		return
-	var fwd = -wheel.anchor.global_transform.basis.z
-	var right = wheel.anchor.global_transform.basis.x
-	var rel_vel = wheel.wheel.linear_velocity - linear_velocity
-	var lateral_speed = rel_vel.dot(right)
-	var longitudinal_speed = rel_vel.dot(fwd)
-	var lateral_force = (-right * lateral_speed * wheel_lateral_grip).limit_length(self.wheel_grip_force_limit)
-	var longitudinal_force = (-fwd * longitudinal_speed * wheel_longitudinal_grip).limit_length(self.wheel_grip_force_limit)
-	var force = lateral_force + longitudinal_force
-	if force == Vector3.ZERO:
-		return
-	wheel.wheel.apply_central_force(force)
-	apply_central_force(-force)
+	return
 
 func _apply_brake_to_wheel(wheel_body, brake_strength, delta):
 	var factor = clamp(brake_strength * delta, 0.0, 1.0)
