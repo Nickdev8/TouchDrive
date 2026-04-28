@@ -1,4 +1,4 @@
-2extends Node2D
+extends Node2D
 
 signal mode_chosen(mode: int)
 
