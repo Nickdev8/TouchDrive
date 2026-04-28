@@ -26,10 +26,7 @@ var _last_config := {}
 @export var throttle_neutral_band := 0.2
 @export var throttle_sensitivity := 0.6
 @export var controller_deadzone := 0.2
-@export var auto_center_steer := true
-@export var auto_shifting := true
-@export var shift_cooldown := 0.6
-var _last_shift_time := 0.0
+@export var auto_center_steer := false
 
 var front_left
 var front_right
@@ -58,22 +55,19 @@ var steering_wheel
 var steering_wheel_basis
 var using_bridge := false
 var fallback_notice := ""
+var _fallback_view_size := Vector2.ZERO
 var _fallback_active_until := 0
 var _fallback_steer := 0.0
 
 @export var allow_fallback_on_linux := true
 @export var fallback_mouse_sensitivity := 0.008
 
-var _state_read_timer := 0.0
-const _STATE_READ_INTERVAL := 0.05  # 20 Hz — avoids per-frame file I/O
-
 func _ready():
 	var os_name = OS.get_name()
-	using_bridge = os_name == "Linux" or os_name == "Windows"
+	using_bridge = os_name == "Linux"
 	if using_bridge:
 		# Start the touchpad->joystick bridge so Godot can read joystick input
-		var script_file = "touchpad_joy_bridge.py" if os_name == "Linux" else "touchpad_windows_bridge.py"
-		var script_path = _ensure_bridge_script(script_file)
+		var script_path = _ensure_bridge_script("touchpad_joy_bridge.py")
 		config_path = ProjectSettings.globalize_path("user://touchpad_joy_config.json")
 		state_path = ProjectSettings.globalize_path("user://touchpad_joy_state.json")
 		_write_config()
@@ -105,21 +99,20 @@ func _stop_bridge():
 
 func _start_bridge(script_path):
 	var args = [script_path, "--auto", "--config", config_path, "--state", state_path]
-	var python_exec = "python3" if OS.get_name() == "Linux" else "python"
 	if not bridge_debug_terminal:
-		return OS.create_process(python_exec, args)
+		return OS.create_process("python3", args)
 
 	var candidates = [
-		["x-terminal-emulator", ["-e", python_exec] + args],
-		["gnome-terminal", ["--", python_exec] + args],
-		["konsole", ["-e", python_exec] + args],
-		["xterm", ["-e", python_exec] + args],
+		["x-terminal-emulator", ["-e", "python3"] + args],
+		["gnome-terminal", ["--", "python3"] + args],
+		["konsole", ["-e", "python3"] + args],
+		["xterm", ["-e", "python3"] + args],
 	]
 	for entry in candidates:
 		var pid = OS.create_process(entry[0], entry[1])
 		if pid > 0:
 			return pid
-	return OS.create_process(python_exec, args)
+	return OS.create_process("python3", args)
 
 func _ensure_bridge_script(filename):
 	var src_path = "res://%s" % filename
@@ -136,22 +129,19 @@ func _ensure_bridge_script(filename):
 func _physics_process(delta):
 	_check_respawn()
 	if using_bridge:
-		_state_read_timer -= delta
-		if _state_read_timer <= 0.0:
-			_state_read_timer = _STATE_READ_INTERVAL
-			_read_bridge_state()
-	_update_input(delta)
+		_read_bridge_state()
+	_update_input()
 	_apply_vehicle(delta)
 	_update_steering_wheel()
 	if using_bridge:
 		_write_config()
 
-func _update_input(delta: float):
+func _update_input():
 	if not using_bridge:
-		_read_fallback_input(delta)
+		_read_fallback_input()
 		return
 	if allow_fallback_on_linux and _fallback_is_active():
-		_read_fallback_input(delta)
+		_read_fallback_input()
 		return
 	var pads = Input.get_connected_joypads()
 	if pads.size() == 0:
@@ -176,41 +166,28 @@ func _apply_vehicle(_delta):
 	front_left.steering = -steer_angle
 	front_right.steering = -steer_angle
 
-	var eng_force := 0.0
-	var brk := 0.0
+	var engine_force = 0.0
+	var brake = 0.0
 	if brake_pressed:
-		brk = max_brake
+		brake = max_brake
 	if gear > 0:
 		var ratio = _gear_ratio(gear)
-		eng_force = max_engine_force * ratio * throttle
+		engine_force = max_engine_force * ratio * throttle
 		var speed_kmh = linear_velocity.length() * 3.6
-		# Auto-shifting: shift up/down based on speed and throttle
-		if auto_shifting:
-			var now = OS.get_ticks_msec() / 1000.0
-			if now - _last_shift_time > shift_cooldown:
-				var up_thresh = GEAR_MAX_SPEED_KMH.get(gear, 80.0) * 0.9
-				if gear < 4 and throttle > 0.2 and speed_kmh > up_thresh:
-					gear += 1
-					_last_shift_time = now
-				elif gear > 1:
-					var down_thresh = GEAR_MAX_SPEED_KMH.get(gear - 1, 30.0) * 0.6
-					if speed_kmh < down_thresh:
-						gear -= 1
-						_last_shift_time = now
 		var max_speed = GEAR_MAX_SPEED_KMH.get(gear, 80.0)
-		var limit: float = clamp(1.0 - (speed_kmh / max_speed), 0.0, 1.0)
-		eng_force *= limit
+		var limit = clamp(1.0 - (speed_kmh / max_speed), 0.0, 1.0)
+		engine_force *= limit
 	elif gear < 0:
-		eng_force = -reverse_force * abs(throttle)
-	if brk > 0.0:
-		eng_force = 0.0
+		engine_force = -reverse_force * abs(throttle)
+	if brake > 0.0:
+		engine_force = 0.0
 
-	rear_left.engine_force = eng_force
-	rear_right.engine_force = eng_force
-	front_left.brake = brk
-	front_right.brake = brk
-	rear_left.brake = brk
-	rear_right.brake = brk
+	rear_left.engine_force = engine_force
+	rear_right.engine_force = engine_force
+	front_left.brake = brake
+	front_right.brake = brake
+	rear_left.brake = brake
+	rear_right.brake = brake
 
 func _gear_ratio(value):
 	match value:
@@ -230,47 +207,25 @@ func _read_bridge_state():
 		return
 	if not FileAccess.file_exists(state_path):
 		left_finger_active = false
-		right_touch_active = false
 		return
 	var file = FileAccess.open(state_path, FileAccess.READ)
 	if not file:
 		left_finger_active = false
-		right_touch_active = false
 		return
 	var content = file.get_as_text()
 	file.close()
 	var data = JSON.parse_string(content)
 	if typeof(data) != TYPE_DICTIONARY:
 		left_finger_active = false
-		right_touch_active = false
 		return
 	var left = data.get("left", {})
-	if typeof(left) == TYPE_DICTIONARY:
-		left_finger_active = bool(left.get("active", false))
-		var lx = float(left.get("x", 0.5))
-		var ly = float(left.get("y", 0.5))
-		left_f1 = Vector2(lx * 2.0 - 1.0, ly * 2.0 - 1.0)
-	else:
+	if typeof(left) != TYPE_DICTIONARY:
 		left_finger_active = false
-	var right = data.get("right", {})
-	if typeof(right) == TYPE_DICTIONARY:
-		right_touch_active = bool(right.get("active", false))
-		right_two_fingers = bool(right.get("two", false))
-		var f1 = right.get("f1", {})
-		var f2 = right.get("f2", {})
-		var r1x = float(f1.get("x", 0.5))
-		var r1y = float(f1.get("y", 0.5))
-		right_f1 = Vector2(r1x * 2.0 - 1.0, r1y * 2.0 - 1.0)
-		var r2x = float(f2.get("x", 0.5))
-		var r2y = float(f2.get("y", 0.5))
-		right_f2 = Vector2(r2x * 2.0 - 1.0, r2y * 2.0 - 1.0)
-		throttle = float(right.get("throttle", throttle))
-		var g = int(right.get("gear", gear))
-		if g != 0:
-			gear = g
-	else:
-		right_touch_active = false
-		right_two_fingers = false
+		return
+	left_finger_active = bool(left.get("active", false))
+	var lx = float(left.get("x", 0.5))
+	var ly = float(left.get("y", 0.5))
+	left_f1 = Vector2(lx * 2.0 - 1.0, ly * 2.0 - 1.0)
 
 func _cache_wheel_nodes():
 	front_left = get_node_or_null("FrontLeft")
@@ -331,8 +286,6 @@ func _read_touchpad_input(pad):
 	brake_pressed = Input.is_joy_button_pressed(pad, JOY_BUTTON_BACK)
 	if right_touch_active:
 		throttle = clamp(Input.get_joy_axis(pad, JOY_AXIS_LEFT_Y), -1.0, 1.0)
-	else:
-		throttle = move_toward(throttle, 0.0, 0.04)
 	var new_gear = _read_gear(pad)
 	if new_gear != 0:
 		gear = new_gear
@@ -345,14 +298,14 @@ func _read_touchpad_input(pad):
 		_axis_to_signed(Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT))
 	)
 
-func _read_fallback_input(delta: float):
+func _read_fallback_input():
 	left_touch_active = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	right_touch_active = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
 	left_finger_active = left_touch_active
 	right_two_fingers = false
 	left_f1 = Vector2.ZERO
 	right_f1 = Vector2.ZERO
-	_fallback_steer = lerp(_fallback_steer, 0.0, clamp(12.0 * delta, 0.0, 1.0))
+	_fallback_steer = lerp(_fallback_steer, 0.0, 0.2)
 	steer = _fallback_steer
 	brake_pressed = Input.is_key_pressed(KEY_SPACE) or Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE)
 
@@ -378,15 +331,15 @@ func _read_gear(pad_id):
 
 func _find_virtual_pad(pads):
 	for pad in pads:
-		var pad_name := Input.get_joy_name(pad).to_lower()
-		if pad_name.find("touchpad-virtual-joystick") != -1:
+		var name = Input.get_joy_name(pad).to_lower()
+		if name.find("touchpad-virtual-joystick") != -1:
 			return pad
 	return -1
 
 func _find_controller_pad(pads):
 	for pad in pads:
-		var pad_name := Input.get_joy_name(pad).to_lower()
-		if pad_name.find("touchpad-virtual-joystick") == -1:
+		var name = Input.get_joy_name(pad).to_lower()
+		if name.find("touchpad-virtual-joystick") == -1:
 			return pad
 	return -1
 
