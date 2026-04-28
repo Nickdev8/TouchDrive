@@ -18,9 +18,17 @@ var _c_prev := false
 var _first_person_anchor
 
 func _ready():
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	if not vehicle:
 		push_warning("Vehicle node missing in Main scene.")
 	_first_person_anchor = get_node_or_null(first_person_anchor_path)
+	if overlay:
+		overlay.mode_chosen.connect(_on_mode_chosen)
+
+func _on_mode_chosen(mode: int) -> void:
+	if vehicle:
+		vehicle.control_mode = mode
+		vehicle.launch_bridge()
 
 func _physics_process(delta):
 	_handle_camera_toggle()
@@ -55,8 +63,9 @@ func _update_camera(delta):
 	else:
 		var pivot = vehicle.global_transform.origin
 		var offset = Vector3(0, 0, camera_settings.camera_distance)
-		var basis = Basis(Vector3.UP, camera_yaw) * Basis(Vector3.RIGHT, camera_pitch)
-		offset = basis * offset
+		var car_yaw: float = vehicle.global_rotation.y
+		var cam_basis := Basis(Vector3.UP, car_yaw + camera_yaw) * Basis(Vector3.RIGHT, camera_pitch)
+		offset = cam_basis * offset
 		var target = pivot + offset + Vector3(0, camera_settings.camera_height, 0)
 		var current = camera.global_transform.origin
 		camera.global_transform.origin = current.lerp(target, clamp(camera_settings.camera_smooth * delta, 0.0, 1.0))
@@ -89,7 +98,6 @@ func _update_overlay():
 	overlay.steer = vehicle.steer
 	overlay.steer_angle = vehicle.steer_angle
 	overlay.gear = vehicle.gear
-	overlay.pads = Input.get_connected_joypads().size()
 	overlay.throttle = vehicle.throttle
 	overlay.right_f1 = vehicle.right_f1
 	overlay.right_f2 = vehicle.right_f2
@@ -99,4 +107,6 @@ func _update_overlay():
 	overlay.left_touch_active = vehicle.left_finger_active
 	overlay.speed_kmh = vehicle.linear_velocity.length() * 3.6
 	overlay.notice = vehicle.fallback_notice
+	overlay.brake_pressed = vehicle.brake_pressed
+	overlay.control_mode = vehicle.control_mode
 	overlay.queue_redraw()
